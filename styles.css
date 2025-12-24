@@ -289,6 +289,61 @@ ul li {
     padding: 1rem;
 }
 
+.appointment-item, .service-item, .billing-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #141218;
+    border: 1px solid #2A2230;
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    transition: all 0.3s;
+}
+
+.appointment-item:hover, .service-item:hover, .billing-item:hover {
+    background: #1A1720;
+    border-color: #C8A24A;
+}
+
+.appointment-info, .service-info, .billing-info {
+    flex: 1;
+}
+
+.appointment-actions, .service-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.billing-summary {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.summary-card {
+    background: #141218;
+    border: 1px solid #2A2230;
+    border-radius: 10px;
+    padding: 1rem;
+    flex: 1;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.summary-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: #B9B0A3;
+    font-size: 14px;
+}
+
+.summary-card p {
+    margin: 0;
+    color: #C8A24A;
+    font-size: 24px;
+    font-weight: bold;
+}
+
 /* Dashboard */
 .dashboard-cards {
     display: flex;

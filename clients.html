@@ -78,27 +78,93 @@
             </div>
             <!-- Appointments -->
             <div id="appointments-tab" class="tab-pane">
-                <h3>Programări</h3>
-                <form id="appointmentForm">
+                <h3>Programări Inteligente</h3>
+                <div class="action-bar">
+                    <button id="addAppointmentBtn">+ Adaugă Programare</button>
+                    <select id="filterAppointmentStatus">
+                        <option value="">Toate</option>
+                        <option value="Programată">Programată</option>
+                        <option value="Finalizată">Finalizată</option>
+                        <option value="Anulată">Anulată</option>
+                    </select>
+                    <select id="filterAppointmentDate">
+                        <option value="today">Astăzi</option>
+                        <option value="future">Viitoare</option>
+                        <option value="completed">Finalizate</option>
+                    </select>
+                </div>
+                <form id="appointmentForm" style="display: none;">
                     <label for="apptClient">Client:</label>
-                    <select id="apptClient"></select>
+                    <select id="apptClient" required></select>
                     <label for="apptService">Serviciu:</label>
-                    <select id="apptService"></select>
-                    <label for="apptDate">Dată:</label>
+                    <select id="apptService" required></select>
+                    <label for="apptDate">Dată & Oră:</label>
                     <input type="datetime-local" id="apptDate" required>
+                    <label for="apptDuration">Durată estimată (minute):</label>
+                    <input type="number" id="apptDuration" min="15" max="480" required>
                     <button type="submit">Adaugă Programare</button>
                 </form>
                 <ul id="appointmentsList"></ul>
             </div>
             <!-- Services -->
             <div id="services-tab" class="tab-pane">
-                <h3>Servicii</h3>
-                <ul id="servicesDisplay"></ul>
+                <h3>Control Total Servicii</h3>
+                <div class="action-bar">
+                    <button id="addServiceBtn">+ Adaugă Serviciu</button>
+                </div>
+                <form id="serviceForm" style="display: none;">
+                    <label for="serviceName">Nume Serviciu:</label>
+                    <input type="text" id="serviceName" required>
+                    <label for="servicePrice">Preț (RON):</label>
+                    <input type="number" id="servicePrice" step="0.01" required>
+                    <label for="serviceDuration">Durată estimată (minute):</label>
+                    <input type="number" id="serviceDuration" min="15" max="480" required>
+                    <label for="serviceCategory">Categorie:</label>
+                    <select id="serviceCategory" required>
+                        <option value="Femei">Femei</option>
+                        <option value="Bărbați">Bărbați</option>
+                    </select>
+                    <button type="submit">Adaugă Serviciu</button>
+                </form>
+                <ul id="servicesList"></ul>
             </div>
             <!-- Billing -->
             <div id="billing-tab" class="tab-pane">
-                <h3>Facturare</h3>
-                <p>Total încasări: <span id="totalBilling">0 RON</span></p>
+                <h3>Evidență Clară a Banilor</h3>
+                <div class="billing-summary">
+                    <div class="summary-card">
+                        <h4>Total Încasări Astăzi</h4>
+                        <p id="todayTotal">0 RON</p>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Număr Clienți Astăzi</h4>
+                        <p id="todayClients">0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Profit Astăzi</h4>
+                        <p id="todayProfit">0 RON</p>
+                    </div>
+                </div>
+                <div class="action-bar">
+                    <button id="addManualBillingBtn">+ Adaugă Manual</button>
+                    <button id="viewPreviousDayBtn">Vezi Ziua Precedentă</button>
+                </div>
+                <form id="manualBillingForm" style="display: none;">
+                    <label for="billingClient">Client:</label>
+                    <select id="billingClient"></select>
+                    <label for="billingService">Serviciu:</label>
+                    <select id="billingService"></select>
+                    <label for="billingAmount">Sumă (RON):</label>
+                    <input type="number" id="billingAmount" step="0.01" required>
+                    <label for="billingMethod">Metodă Plată:</label>
+                    <select id="billingMethod" required>
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                    </select>
+                    <label for="billingDate">Dată:</label>
+                    <input type="date" id="billingDate" required>
+                    <button type="submit">Adaugă Încasare</button>
+                </form>
                 <ul id="billingList"></ul>
             </div>
         </div>

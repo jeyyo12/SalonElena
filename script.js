@@ -198,12 +198,40 @@ if (document.getElementById('clientForm')) {
 
     function renderAppointments() {
         const list = document.getElementById('appointmentsList');
+        const statusFilter = document.getElementById('filterAppointmentStatus').value;
+        const dateFilter = document.getElementById('filterAppointmentDate').value;
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
         list.innerHTML = '';
-        appointments.forEach((appt, index) => {
-            const li = document.createElement('li');
-            li.innerHTML = `${appt.client} - ${appt.service} la ${new Date(appt.date).toLocaleString()} <button onclick="deleteAppointment(${index})">Șterge</button>`;
-            list.appendChild(li);
-        });
+        appointments
+            .filter(appt => {
+                if (statusFilter && appt.status !== statusFilter) return false;
+                const apptDate = new Date(appt.date);
+                if (dateFilter === 'today' && apptDate.toDateString() !== today.toDateString()) return false;
+                if (dateFilter === 'future' && apptDate < today) return false;
+                if (dateFilter === 'completed' && appt.status !== 'Finalizată') return false;
+                return true;
+            })
+            .forEach((appt, index) => {
+                const li = document.createElement('li');
+                li.className = 'appointment-item';
+                const apptDate = new Date(appt.date);
+                li.innerHTML = `
+                    <div class="appointment-info">
+                        <strong>${appt.client}</strong> - ${appt.service} (${appt.duration} min)<br>
+                        ${apptDate.toLocaleString('ro-RO')} - Status: ${appt.status}
+                    </div>
+                    <div class="appointment-actions">
+                        ${appt.status === 'Programată' ? `<button onclick="completeAppointment(${index})">Finalizează</button>` : ''}
+                        ${appt.status === 'Programată' ? `<button onclick="cancelAppointment(${index})">Anulează</button>` : ''}
+                        <button onclick="deleteAppointment(${index})">Șterge</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
     }
 
     function populateAppointmentSelects() {
@@ -218,10 +246,10 @@ if (document.getElementById('clientForm')) {
             clientSelect.appendChild(option);
         });
         const services = JSON.parse(localStorage.getItem('services')) || [];
-        services.forEach(service => {
+        services.filter(s => s.active !== false).forEach(service => {
             const option = document.createElement('option');
             option.value = service.name;
-            option.textContent = service.name;
+            option.textContent = `${service.name} - ${service.price} RON`;
             serviceSelect.appendChild(option);
         });
     }
@@ -233,12 +261,41 @@ if (document.getElementById('clientForm')) {
             const client = document.getElementById('apptClient').value;
             const service = document.getElementById('apptService').value;
             const date = document.getElementById('apptDate').value;
-            appointments.push({ client, service, date });
+            const duration = document.getElementById('apptDuration').value;
+            appointments.push({ client, service, date, duration: parseInt(duration), status: 'Programată' });
             localStorage.setItem('appointments', JSON.stringify(appointments));
             renderAppointments();
             apptForm.reset();
+            apptForm.style.display = 'none';
         });
     }
+
+    window.completeAppointment = (index) => {
+        appointments[index].status = 'Finalizată';
+        localStorage.setItem('appointments', JSON.stringify(appointments));
+        // Add to earnings
+        const appt = appointments[index];
+        const services = JSON.parse(localStorage.getItem('services')) || [];
+        const service = services.find(s => s.name === appt.service);
+        if (service) {
+            const earnings = JSON.parse(localStorage.getItem('earnings')) || [];
+            earnings.push({
+                date: new Date().toLocaleDateString('ro-RO'),
+                amount: service.price,
+                description: `${appt.service} pentru ${appt.client}`,
+                method: 'Cash' // Default, can be changed later
+            });
+            localStorage.setItem('earnings', JSON.stringify(earnings));
+        }
+        renderAppointments();
+        renderBilling();
+    };
+
+    window.cancelAppointment = (index) => {
+        appointments[index].status = 'Anulată';
+        localStorage.setItem('appointments', JSON.stringify(appointments));
+        renderAppointments();
+    };
 
     window.deleteAppointment = (index) => {
         appointments.splice(index, 1);
@@ -246,33 +303,172 @@ if (document.getElementById('clientForm')) {
         renderAppointments();
     };
 
-    // Services display
+    // Services
+    let services = JSON.parse(localStorage.getItem('services')) || [];
+
     function renderServices() {
-        const list = document.getElementById('servicesDisplay');
+        const list = document.getElementById('servicesList');
         list.innerHTML = '';
-        const services = JSON.parse(localStorage.getItem('services')) || [];
-        services.forEach(service => {
+        services.forEach((service, index) => {
+            if (service.active === false) return;
             const li = document.createElement('li');
-            li.textContent = `${service.name} - ${service.price} RON`;
+            li.className = 'service-item';
+            li.innerHTML = `
+                <div class="service-info">
+                    <strong>${service.name}</strong> - ${service.price} RON (${service.duration} min) - ${service.category}
+                </div>
+                <div class="service-actions">
+                    <button onclick="editService(${index})">Editează</button>
+                    <button onclick="deactivateService(${index})">Dezactivează</button>
+                </div>
+            `;
             list.appendChild(li);
         });
     }
 
+    if (document.getElementById('serviceForm')) {
+        const svcForm = document.getElementById('serviceForm');
+        svcForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('serviceName').value;
+            const price = parseFloat(document.getElementById('servicePrice').value);
+            const duration = parseInt(document.getElementById('serviceDuration').value);
+            const category = document.getElementById('serviceCategory').value;
+            services.push({ name, price, duration, category, active: true });
+            localStorage.setItem('services', JSON.stringify(services));
+            renderServices();
+            populateAppointmentSelects();
+            populateBillingSelects();
+            svcForm.reset();
+            svcForm.style.display = 'none';
+        });
+    }
+
+    window.editService = (index) => {
+        const service = services[index];
+        document.getElementById('serviceName').value = service.name;
+        document.getElementById('servicePrice').value = service.price;
+        document.getElementById('serviceDuration').value = service.duration;
+        document.getElementById('serviceCategory').value = service.category;
+        document.getElementById('serviceForm').style.display = 'block';
+        // For simplicity, edit by replacing
+        document.getElementById('serviceForm').addEventListener('submit', function editHandler(e) {
+            e.preventDefault();
+            services[index] = {
+                name: document.getElementById('serviceName').value,
+                price: parseFloat(document.getElementById('servicePrice').value),
+                duration: parseInt(document.getElementById('serviceDuration').value),
+                category: document.getElementById('serviceCategory').value,
+                active: true
+            };
+            localStorage.setItem('services', JSON.stringify(services));
+            renderServices();
+            populateAppointmentSelects();
+            populateBillingSelects();
+            document.getElementById('serviceForm').reset();
+            document.getElementById('serviceForm').style.display = 'none';
+            this.removeEventListener('submit', editHandler);
+        }, { once: true });
+    };
+
+    window.deactivateService = (index) => {
+        services[index].active = false;
+        localStorage.setItem('services', JSON.stringify(services));
+        renderServices();
+        populateAppointmentSelects();
+        populateBillingSelects();
+    };
+
     // Billing
-    function renderBilling() {
-        const totalEl = document.getElementById('totalBilling');
-        const list = document.getElementById('billingList');
+    function renderBilling(viewDate = null) {
+        const today = viewDate || new Date().toLocaleDateString('ro-RO');
         const earnings = JSON.parse(localStorage.getItem('earnings')) || [];
-        let total = 0;
+        const todayEarnings = earnings.filter(e => e.date === today);
+        const total = todayEarnings.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+        const clientsCount = new Set(todayEarnings.map(e => e.description.split(' pentru ')[1])).size;
+        // Assuming profit is total for now, can add costs later
+        const profit = total;
+
+        document.getElementById('todayTotal').textContent = total.toFixed(2) + ' RON';
+        document.getElementById('todayClients').textContent = clientsCount;
+        document.getElementById('todayProfit').textContent = profit.toFixed(2) + ' RON';
+
+        const list = document.getElementById('billingList');
         list.innerHTML = '';
-        earnings.forEach(entry => {
-            total += parseFloat(entry.amount);
+        todayEarnings.forEach(entry => {
             const li = document.createElement('li');
-            li.textContent = `${entry.date} - ${entry.amount} RON - ${entry.description}`;
+            li.className = 'billing-item';
+            li.innerHTML = `
+                <div class="billing-info">
+                    ${entry.description} - ${entry.amount} RON (${entry.method}) - ${entry.date}
+                </div>
+            `;
             list.appendChild(li);
         });
-        totalEl.textContent = total.toFixed(2) + ' RON';
     }
+
+    function populateBillingSelects() {
+        const clientSelect = document.getElementById('billingClient');
+        const serviceSelect = document.getElementById('billingService');
+        clientSelect.innerHTML = '<option value="">Selectează client</option>';
+        serviceSelect.innerHTML = '<option value="">Selectează serviciu</option>';
+        clients.forEach(client => {
+            const option = document.createElement('option');
+            option.value = client.name;
+            option.textContent = client.name;
+            clientSelect.appendChild(option);
+        });
+        services.filter(s => s.active !== false).forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.name;
+            option.textContent = `${service.name} - ${service.price} RON`;
+            serviceSelect.appendChild(option);
+        });
+    }
+
+    if (document.getElementById('manualBillingForm')) {
+        const billForm = document.getElementById('manualBillingForm');
+        billForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const client = document.getElementById('billingClient').value;
+            const service = document.getElementById('billingService').value;
+            const amount = parseFloat(document.getElementById('billingAmount').value);
+            const method = document.getElementById('billingMethod').value;
+            const date = document.getElementById('billingDate').value;
+            const earnings = JSON.parse(localStorage.getItem('earnings')) || [];
+            earnings.push({
+                date: new Date(date).toLocaleDateString('ro-RO'),
+                amount,
+                description: service ? `${service} pentru ${client}` : `Încasare manuală pentru ${client}`,
+                method
+            });
+            localStorage.setItem('earnings', JSON.stringify(earnings));
+            renderBilling();
+            billForm.reset();
+            billForm.style.display = 'none';
+        });
+    }
+
+    document.getElementById('addAppointmentBtn').addEventListener('click', () => {
+        document.getElementById('appointmentForm').style.display = document.getElementById('appointmentForm').style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('addServiceBtn').addEventListener('click', () => {
+        document.getElementById('serviceForm').style.display = document.getElementById('serviceForm').style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('addManualBillingBtn').addEventListener('click', () => {
+        document.getElementById('manualBillingForm').style.display = document.getElementById('manualBillingForm').style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('viewPreviousDayBtn').addEventListener('click', () => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        renderBilling(yesterday.toLocaleDateString('ro-RO'));
+    });
+
+    document.getElementById('filterAppointmentStatus').addEventListener('change', renderAppointments);
+    document.getElementById('filterAppointmentDate').addEventListener('change', renderAppointments);
 
     // Initial renders
     filteredClients = [...clients];
@@ -281,6 +477,7 @@ if (document.getElementById('clientForm')) {
     renderServices();
     renderBilling();
     populateAppointmentSelects();
+    populateBillingSelects();
 }
 
 // Dashboard
