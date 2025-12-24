@@ -281,3 +281,55 @@ ul li {
     margin: 0 1rem;
     color: #B9B0A3;
 }
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Dashboard */
+.dashboard-cards {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.card {
+    background: #141218;
+    border: 1px solid #2A2230;
+    border-radius: 10px;
+    padding: 1rem;
+    flex: 1;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.card h3 {
+    margin: 0 0 0.5rem 0;
+    color: #C8A24A;
+}
+
+.card p {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #F2EDE3;
+}
+
+.recent-activity {
+    background: #141218;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.recent-activity h3 {
+    color: #C8A24A;
+}
+
+.recent-activity ul {
+    list-style: none;
+    padding: 0;
+}
+
+.recent-activity li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #2A2230;
+}

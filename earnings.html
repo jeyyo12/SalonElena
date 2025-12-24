@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Încasări Zilnice - Salon Elena</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <h1><i class="fas fa-spa"></i> Salon Elena <i class="fas fa-spa"></i></h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Dashboard</a></li>
+                <li><a href="clients.html">Clienți</a></li>
+                <li><a href="earnings.html" class="active">Încasări Zilnice</a></li>
+                <li><a href="settings.html">Setări</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Încasări Zilnice</h2>
+        <div class="date-selector">
+            <label for="reportDate">Selectează dată:</label>
+            <input type="date" id="reportDate" value="">
+        </div>
+        <div class="earnings-form">
+            <h3>Adaugă Încasare</h3>
+            <form id="earningsForm">
+                <label for="service">Serviciu:</label>
+                <input type="text" id="service" required>
+                <label for="clientSelect">Client:</label>
+                <select id="clientSelect">
+                    <option value="">Client nou</option>
+                </select>
+                <label for="price">Preț (RON):</label>
+                <input type="number" id="price" step="0.01" required>
+                <label for="paymentMethod">Metodă plată:</label>
+                <select id="paymentMethod">
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="Transfer">Transfer</option>
+                </select>
+                <button type="submit">Adaugă Încasare</button>
+            </form>
+        </div>
+        <div class="expenses-form">
+            <h3>Adaugă Cheltuială</h3>
+            <form id="expensesForm">
+                <label for="expenseDesc">Descriere:</label>
+                <input type="text" id="expenseDesc" required>
+                <label for="expenseAmount">Sumă (RON):</label>
+                <input type="number" id="expenseAmount" step="0.01" required>
+                <button type="submit">Adaugă Cheltuială</button>
+            </form>
+        </div>
+        <div class="balance">
+            <h3>Bilanț Zilnic</h3>
+            <p>Încasări: <span id="totalEarnings">0 RON</span></p>
+            <p>Cheltuieli: <span id="totalExpenses">0 RON</span></p>
+            <p>Profit: <span id="netProfit">0 RON</span></p>
+            <p>Clienți serviți: <span id="clientsServed">0</span></p>
+        </div>
+        <div class="transactions">
+            <h3>Tranzacții Astăzi</h3>
+            <ul id="transactionsList">
+            </ul>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Salon Elena. Toate drepturile rezervate.</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>

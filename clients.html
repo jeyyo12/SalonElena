@@ -27,14 +27,41 @@
         </div>
         <div class="action-bar">
             <input type="text" id="search" placeholder="Search clients...">
+            <select id="filterSex">
+                <option value="">Toți</option>
+                <option value="Femei">Femei</option>
+                <option value="Bărbați">Bărbați</option>
+            </select>
+            <select id="filterTag">
+                <option value="">Toți</option>
+                <option value="VIP">VIP</option>
+                <option value="Nou">Nou</option>
+                <option value="Fidel">Fidel</option>
+            </select>
             <button id="addClientBtn">+ Add New Client</button>
             <button id="filterBtn">Filter <i class="fas fa-filter"></i></button>
         </div>
         <form id="clientForm" style="display: none;">
-            <label for="clientName">Nume Client:</label>
+            <label for="clientName">Nume complet:</label>
             <input type="text" id="clientName" required>
-            <label for="clientImage">Nume Imagine (fără extensie):</label>
-            <input type="text" id="clientImage" placeholder="Ex: MariaPopescu">
+            <label for="clientPhone">Telefon:</label>
+            <input type="tel" id="clientPhone" required>
+            <label for="clientEmail">Email:</label>
+            <input type="email" id="clientEmail">
+            <label for="clientSex">Sex:</label>
+            <select id="clientSex" required>
+                <option value="Femei">Femei</option>
+                <option value="Bărbați">Bărbați</option>
+            </select>
+            <label for="clientNotes">Observații:</label>
+            <textarea id="clientNotes"></textarea>
+            <label for="clientTag">Tag:</label>
+            <select id="clientTag">
+                <option value="">Niciunul</option>
+                <option value="VIP">VIP</option>
+                <option value="Nou">Nou</option>
+                <option value="Fidel">Fidel</option>
+            </select>
             <button type="submit">Adaugă</button>
         </form>
         <div id="clientsList">

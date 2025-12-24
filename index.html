@@ -3,34 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salon Elena - Salon de Coafură și Hairstyle</title>
+    <title>Dashboard - Salon Elena</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header>
-        <h1>Salon Elena - Management Profesional</h1>
+        <h1><i class="fas fa-spa"></i> Salon Elena <i class="fas fa-spa"></i></h1>
         <nav>
             <ul>
-                <li><a href="clients.html">Clienți Femei</a></li>
-                <li><a href="men.html">Clienți Bărbați</a></li>
+                <li><a href="index.html" class="active">Dashboard</a></li>
+                <li><a href="clients.html">Clienți</a></li>
+                <li><a href="earnings.html">Încasări Zilnice</a></li>
+                <li><a href="settings.html">Setări</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <section class="welcome">
-            <h2>Bine ați venit în lumea eleganței și frumuseții la Salon Elena</h2>
-            <p>Descoperiți rafinamentul suprem în arta coafurii și hairstyling-ului, unde fiecare detaliu este conceput pentru a vă transforma într-o adevărată regină a frumuseții. Salonul nostru vă invită să vă răsfățați într-o atmosferă luxoasă și primitoare, unde pasiunea pentru frumusețe întâlnește măiestria profesională.</p>
-            <img src="https://via.placeholder.com/800x400?text=Salon+Elena" alt="Salon Elena" style="width:100%; max-width:800px;">
-        </section>
-        <section class="services">
-            <h2>Serviciile Noastre Exquisite</h2>
-            <ul>
-                <li>Tuns și coafat cu precizie divină</li>
-                <li>Vopsit păr cu nuanțe captivante</li>
-                <li>Tratament păr revitalizant</li>
-                <li>Coafuri speciale pentru ocazii memorabile</li>
+        <h2>Dashboard</h2>
+        <div class="dashboard-cards">
+            <div class="card">
+                <h3>Total Clienți</h3>
+                <p id="totalClients">0</p>
+            </div>
+            <div class="card">
+                <h3>Încasări Astăzi</h3>
+                <p id="todayEarnings">0 RON</p>
+            </div>
+            <div class="card">
+                <h3>Profit Astăzi</h3>
+                <p id="todayProfit">0 RON</p>
+            </div>
+            <div class="card">
+                <h3>Clienți Serviți Astăzi</h3>
+                <p id="todayClients">0</p>
+            </div>
+        </div>
+        <div class="recent-activity">
+            <h3>Activitate Recentă</h3>
+            <ul id="recentList">
             </ul>
-        </section>
+        </div>
     </main>
     <footer>
         <p>&copy; 2025 Salon Elena. Toate drepturile rezervate.</p>

@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuns Bărbați - Salon Elena</title>
+    <title>Clienți Bărbați - Salon Elena</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header>
-        <h1>Clienți Bărbați - Salon Elena</h1>
+        <h1><i class="fas fa-cut"></i> Clienți Bărbați <i class="fas fa-brush"></i></h1>
         <nav>
             <ul>
                 <li><a href="index.html">Management</a></li>
@@ -18,26 +19,51 @@
         </nav>
     </header>
     <main>
-        <h2>Adaugă Client Bărbat</h2>
-        <form id="menClientForm">
-            <label for="menClientName">Nume Client:</label>
-            <input type="text" id="menClientName" required>
-            <label for="charge">Sumă Încasată (RON):</label>
-            <input type="number" id="charge" step="0.01" required>
-            <button type="submit">Adaugă</button>
-        </form>
-        <h2>Lista Clienți Bărbați</h2>
-        <table id="menTable">
-            <thead>
-                <tr>
-                    <th>Nume Client</th>
-                    <th>Sumă Încasată</th>
-                    <th>Data</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+        <div class="tabs">
+            <button class="tab active" data-tab="clients">Clients List</button>
+            <button class="tab" data-tab="appointments">Appointments</button>
+            <button class="tab" data-tab="services">Services</button>
+            <button class="tab" data-tab="billing">Billing</button>
+        </div>
+        <div id="tab-content">
+            <!-- Clients List -->
+            <div id="clients-tab" class="tab-pane active">
+                <div class="action-bar">
+                    <input type="text" id="search-men" placeholder="Search clients...">
+                    <button id="addMenClientBtn">+ Add New Client</button>
+                    <button id="filterMenBtn">Filter <i class="fas fa-filter"></i></button>
+                </div>
+                <form id="menClientForm" style="display: none;">
+                    <label for="menClientName">Nume Client:</label>
+                    <input type="text" id="menClientName" required>
+                    <label for="menCharge">Sumă Încasată (RON):</label>
+                    <input type="number" id="menCharge" step="0.01" required>
+                    <button type="submit">Adaugă</button>
+                </form>
+                <div id="menClientsList">
+                </div>
+                <div class="pagination">
+                    <button id="prevMenBtn">Prev</button>
+                    <span id="pageMenInfo">Showing 1–6 of 10 Clients</span>
+                    <button id="nextMenBtn">Next</button>
+                </div>
+            </div>
+            <!-- Appointments -->
+            <div id="appointments-tab" class="tab-pane">
+                <h2>Programări</h2>
+                <p>Funcționalitate în dezvoltare.</p>
+            </div>
+            <!-- Services -->
+            <div id="services-tab" class="tab-pane">
+                <h2>Servicii</h2>
+                <p>Funcționalitate în dezvoltare.</p>
+            </div>
+            <!-- Billing -->
+            <div id="billing-tab" class="tab-pane">
+                <h2>Facturare</h2>
+                <p>Funcționalitate în dezvoltare.</p>
+            </div>
+        </div>
     </main>
     <footer>
         <p>&copy; 2025 Salon Elena. Toate drepturile rezervate.</p>
