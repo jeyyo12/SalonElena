@@ -80,11 +80,6 @@ footer {
     padding: 1.5rem;
     background: linear-gradient(135deg, #4a148c, #7b1fa2);
     color: #fff;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    box-shadow: 0 -4px 8px rgba(0,0,0,0.3);
-    transform: translateZ(10px);
 }
 
 form {
