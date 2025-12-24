@@ -60,26 +60,20 @@ if (document.getElementById('clientForm')) {
 
     let clients = JSON.parse(localStorage.getItem('clients')) || [];
 
-    const services = ['Tuns', 'Vopsit', 'Tratament', 'Coafat'];
-
     function renderClients() {
         clientsList.innerHTML = '';
         clients.forEach((client, index) => {
             const clientDiv = document.createElement('div');
+            clientDiv.style.cssText = 'background: rgba(42, 42, 42, 0.9); padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-bottom: 1rem; transform: rotateX(0.5deg); transition: transform 0.3s;';
             clientDiv.innerHTML = `
-                <h3>${client.name}</h3>
-                <ul>
-                    ${services.map(service => `
-                        <li>
-                            <label>
-                                <input type="checkbox" ${client.services[service] ? 'checked' : ''} onchange="toggleService(${index}, '${service}')">
-                                ${service}
-                            </label>
-                        </li>
-                    `).join('')}
-                </ul>
-                <button onclick="removeClient(${index})">Șterge Client</button>
+                <h3 style="margin-top: 0;">${client.name}</h3>
+                <label for="work${index}">Lucrări efectuate:</label>
+                <textarea id="work${index}" rows="4" style="width: 100%; padding: 0.5rem; border: 2px solid #7b1fa2; border-radius: 10px; background-color: #2a2a2a; color: #e0e0e0; font-family: 'Georgia', serif; font-size: 1rem; resize: vertical;">${client.work || ''}</textarea>
+                <button onclick="saveWork(${index})" style="margin-top: 0.5rem;">Salvează Lucrări</button>
+                <button onclick="removeClient(${index})" style="margin-top: 0.5rem;">Șterge Client</button>
             `;
+            clientDiv.onmouseover = () => clientDiv.style.transform = 'rotateX(0deg) translateZ(5px)';
+            clientDiv.onmouseout = () => clientDiv.style.transform = 'rotateX(0.5deg)';
             clientsList.appendChild(clientDiv);
         });
     }
@@ -87,17 +81,17 @@ if (document.getElementById('clientForm')) {
     clientForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('clientName').value;
-        const servicesObj = {};
-        services.forEach(s => servicesObj[s] = false);
-        clients.push({ name, services: servicesObj });
+        clients.push({ name, work: '' });
         localStorage.setItem('clients', JSON.stringify(clients));
         renderClients();
         clientForm.reset();
     });
 
-    window.toggleService = (clientIndex, service) => {
-        clients[clientIndex].services[service] = !clients[clientIndex].services[service];
+    window.saveWork = (index) => {
+        const work = document.getElementById(`work${index}`).value;
+        clients[index].work = work;
         localStorage.setItem('clients', JSON.stringify(clients));
+        alert('Lucrări salvate!');
     };
 
     window.removeClient = (index) => {
