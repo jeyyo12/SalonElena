@@ -55,6 +55,20 @@ if (document.getElementById('stockForm')) {
 
 // Clients management
 if (document.getElementById('clientForm')) {
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tabPanes.forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            const tabName = tab.getAttribute('data-tab');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        });
+    });
+
     const clientForm = document.getElementById('clientForm');
     const clientsList = document.getElementById('clientsList');
     const searchInput = document.getElementById('search');
@@ -179,9 +193,94 @@ if (document.getElementById('clientForm')) {
         }
     };
 
-    // Initial render
+    // Appointments
+    let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+
+    function renderAppointments() {
+        const list = document.getElementById('appointmentsList');
+        list.innerHTML = '';
+        appointments.forEach((appt, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = `${appt.client} - ${appt.service} la ${new Date(appt.date).toLocaleString()} <button onclick="deleteAppointment(${index})">Șterge</button>`;
+            list.appendChild(li);
+        });
+    }
+
+    function populateAppointmentSelects() {
+        const clientSelect = document.getElementById('apptClient');
+        const serviceSelect = document.getElementById('apptService');
+        clientSelect.innerHTML = '<option value="">Selectează client</option>';
+        serviceSelect.innerHTML = '<option value="">Selectează serviciu</option>';
+        clients.forEach(client => {
+            const option = document.createElement('option');
+            option.value = client.name;
+            option.textContent = client.name;
+            clientSelect.appendChild(option);
+        });
+        const services = JSON.parse(localStorage.getItem('services')) || [];
+        services.forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.name;
+            option.textContent = service.name;
+            serviceSelect.appendChild(option);
+        });
+    }
+
+    if (document.getElementById('appointmentForm')) {
+        const apptForm = document.getElementById('appointmentForm');
+        apptForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const client = document.getElementById('apptClient').value;
+            const service = document.getElementById('apptService').value;
+            const date = document.getElementById('apptDate').value;
+            appointments.push({ client, service, date });
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            renderAppointments();
+            apptForm.reset();
+        });
+    }
+
+    window.deleteAppointment = (index) => {
+        appointments.splice(index, 1);
+        localStorage.setItem('appointments', JSON.stringify(appointments));
+        renderAppointments();
+    };
+
+    // Services display
+    function renderServices() {
+        const list = document.getElementById('servicesDisplay');
+        list.innerHTML = '';
+        const services = JSON.parse(localStorage.getItem('services')) || [];
+        services.forEach(service => {
+            const li = document.createElement('li');
+            li.textContent = `${service.name} - ${service.price} RON`;
+            list.appendChild(li);
+        });
+    }
+
+    // Billing
+    function renderBilling() {
+        const totalEl = document.getElementById('totalBilling');
+        const list = document.getElementById('billingList');
+        const earnings = JSON.parse(localStorage.getItem('earnings')) || [];
+        let total = 0;
+        list.innerHTML = '';
+        earnings.forEach(entry => {
+            total += parseFloat(entry.amount);
+            const li = document.createElement('li');
+            li.textContent = `${entry.date} - ${entry.amount} RON - ${entry.description}`;
+            list.appendChild(li);
+        });
+        totalEl.textContent = total.toFixed(2) + ' RON';
+    }
+
+    // Initial renders
     filteredClients = [...clients];
     renderClients();
+    renderAppointments();
+    renderServices();
+    renderBilling();
+    populateAppointmentSelects();
 }
 
 // Dashboard
@@ -321,20 +420,6 @@ if (document.getElementById('servicesForm')) {
 
 // Men clients management
 if (document.getElementById('menClientForm')) {
-    // Tab switching
-    const tabs = document.querySelectorAll('.tab');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tabPanes.forEach(p => p.classList.remove('active'));
-            tab.classList.add('active');
-            const tabName = tab.getAttribute('data-tab');
-            document.getElementById(tabName + '-tab').classList.add('active');
-        });
-    });
-
     const menClientForm = document.getElementById('menClientForm');
     const menClientsList = document.getElementById('menClientsList');
     const searchMenInput = document.getElementById('search-men');

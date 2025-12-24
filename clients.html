@@ -21,56 +21,86 @@
     </header>
     <main>
         <div class="tabs">
-            <button class="tab active">Clients List</button>
-            <button class="tab">Appointments</button>
-            <button class="tab">Services</button>
-            <button class="tab">Billing</button>
+            <button class="tab active" data-tab="clients">Clients List</button>
+            <button class="tab" data-tab="appointments">Appointments</button>
+            <button class="tab" data-tab="services">Services</button>
+            <button class="tab" data-tab="billing">Billing</button>
         </div>
-        <div class="action-bar">
-            <input type="text" id="search" placeholder="Search clients...">
-            <select id="filterSex">
-                <option value="">Toți</option>
-                <option value="Femei">Femei</option>
-                <option value="Bărbați">Bărbați</option>
-            </select>
-            <select id="filterTag">
-                <option value="">Toți</option>
-                <option value="VIP">VIP</option>
-                <option value="Nou">Nou</option>
-                <option value="Fidel">Fidel</option>
-            </select>
-            <button id="addClientBtn">+ Add New Client</button>
-            <button id="filterBtn">Filter <i class="fas fa-filter"></i></button>
-        </div>
-        <form id="clientForm" style="display: none;">
-            <label for="clientName">Nume complet:</label>
-            <input type="text" id="clientName" required>
-            <label for="clientPhone">Telefon:</label>
-            <input type="tel" id="clientPhone" required>
-            <label for="clientEmail">Email:</label>
-            <input type="email" id="clientEmail">
-            <label for="clientSex">Sex:</label>
-            <select id="clientSex" required>
-                <option value="Femei">Femei</option>
-                <option value="Bărbați">Bărbați</option>
-            </select>
-            <label for="clientNotes">Observații:</label>
-            <textarea id="clientNotes"></textarea>
-            <label for="clientTag">Tag:</label>
-            <select id="clientTag">
-                <option value="">Niciunul</option>
-                <option value="VIP">VIP</option>
-                <option value="Nou">Nou</option>
-                <option value="Fidel">Fidel</option>
-            </select>
-            <button type="submit">Adaugă</button>
-        </form>
-        <div id="clientsList">
-        </div>
-        <div class="pagination">
-            <button id="prevBtn">Prev</button>
-            <span id="pageInfo">Showing 1–6 of 10 Clients</span>
-            <button id="nextBtn">Next</button>
+        <div id="tab-content">
+            <!-- Clients List -->
+            <div id="clients-tab" class="tab-pane active">
+                <div class="action-bar">
+                    <input type="text" id="search" placeholder="Search clients...">
+                    <select id="filterSex">
+                        <option value="">Toți</option>
+                        <option value="Femei">Femei</option>
+                        <option value="Bărbați">Bărbați</option>
+                    </select>
+                    <select id="filterTag">
+                        <option value="">Toți</option>
+                        <option value="VIP">VIP</option>
+                        <option value="Nou">Nou</option>
+                        <option value="Fidel">Fidel</option>
+                    </select>
+                    <button id="addClientBtn">+ Add New Client</button>
+                    <button id="filterBtn">Filter <i class="fas fa-filter"></i></button>
+                </div>
+                <form id="clientForm" style="display: none;">
+                    <label for="clientName">Nume complet:</label>
+                    <input type="text" id="clientName" required>
+                    <label for="clientPhone">Telefon:</label>
+                    <input type="tel" id="clientPhone" required>
+                    <label for="clientEmail">Email:</label>
+                    <input type="email" id="clientEmail">
+                    <label for="clientSex">Sex:</label>
+                    <select id="clientSex" required>
+                        <option value="Femei">Femei</option>
+                        <option value="Bărbați">Bărbați</option>
+                    </select>
+                    <label for="clientNotes">Observații:</label>
+                    <textarea id="clientNotes"></textarea>
+                    <label for="clientTag">Tag:</label>
+                    <select id="clientTag">
+                        <option value="">Niciunul</option>
+                        <option value="VIP">VIP</option>
+                        <option value="Nou">Nou</option>
+                        <option value="Fidel">Fidel</option>
+                    </select>
+                    <button type="submit">Adaugă</button>
+                </form>
+                <div id="clientsList">
+                </div>
+                <div class="pagination">
+                    <button id="prevBtn">Prev</button>
+                    <span id="pageInfo">Showing 1–6 of 10 Clients</span>
+                    <button id="nextBtn">Next</button>
+                </div>
+            </div>
+            <!-- Appointments -->
+            <div id="appointments-tab" class="tab-pane">
+                <h3>Programări</h3>
+                <form id="appointmentForm">
+                    <label for="apptClient">Client:</label>
+                    <select id="apptClient"></select>
+                    <label for="apptService">Serviciu:</label>
+                    <select id="apptService"></select>
+                    <label for="apptDate">Dată:</label>
+                    <input type="datetime-local" id="apptDate" required>
+                    <button type="submit">Adaugă Programare</button>
+                </form>
+                <ul id="appointmentsList"></ul>
+            </div>
+            <!-- Services -->
+            <div id="services-tab" class="tab-pane">
+                <h3>Servicii</h3>
+                <ul id="servicesDisplay"></ul>
+            </div>
+            <!-- Billing -->
+            <div id="billing-tab" class="tab-pane">
+                <h3>Facturare</h3>
+                <p>Total încasări: <span id="totalBilling">0 RON</span></p>
+                <ul id="billingList"></ul>
+            </div>
         </div>
     </main>
     <footer>

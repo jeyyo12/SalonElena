@@ -281,6 +281,14 @@ ul li {
     display: block;
 }
 
+.tab-pane {
+    display: none;
+}
+
+#tab-content {
+    padding: 1rem;
+}
+
 /* Dashboard */
 .dashboard-cards {
     display: flex;
