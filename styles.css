@@ -5,6 +5,7 @@ body {
     background-color: #1a1a1a;
     color: #e0e0e0;
     line-height: 1.6;
+    perspective: 1000px;
 }
 
 header {
@@ -137,4 +138,31 @@ ul {
 ul li {
     margin: 1rem 0;
     font-size: 1.1rem;
+}
+
+.client-card {
+    background: rgba(42, 42, 42, 0.9);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin: 1rem 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    transition: transform 0.3s, box-shadow 0.3s;
+    transform-style: preserve-3d;
+}
+
+.client-card:hover {
+    transform: translateY(-10px) rotateX(5deg);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.7);
+}
+
+.men-table {
+    transform-style: preserve-3d;
+}
+
+.men-table tr {
+    transition: transform 0.3s;
+}
+
+.men-table tr:hover {
+    transform: translateY(-5px) rotateX(2deg);
 }
