@@ -29,21 +29,23 @@
         <div id="tab-content">
             <!-- Clients List -->
             <div id="clients-tab" class="tab-pane active">
-                <div class="action-bar">
-                    <input type="text" id="search" placeholder="Search clients...">
-                    <select id="filterSex">
-                        <option value="">Toți</option>
-                        <option value="Femei">Femei</option>
-                        <option value="Bărbați">Bărbați</option>
-                    </select>
-                    <select id="filterTag">
-                        <option value="">Toți</option>
-                        <option value="VIP">VIP</option>
-                        <option value="Nou">Nou</option>
-                        <option value="Fidel">Fidel</option>
-                    </select>
-                    <button id="addClientBtn">+ Add New Client</button>
-                    <button id="filterBtn">Filter <i class="fas fa-filter"></i></button>
+                <div class="premium-toolbar">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="search" placeholder="Caută client...">
+                    </div>
+                    <div class="filter-chips">
+                        <button class="filter-chip active" data-filter="all">Toți</button>
+                        <button class="filter-chip" data-filter="vip">VIP</button>
+                        <button class="filter-chip" data-filter="nou">Noi</button>
+                        <button class="filter-chip" data-filter="fidel">Fidel</button>
+                        <button class="filter-chip" data-filter="femei">Femei</button>
+                        <button class="filter-chip" data-filter="barbati">Bărbați</button>
+                    </div>
+                    <div class="toolbar-actions">
+                        <button id="addClientBtn" class="btn-primary">+ Client Nou</button>
+                        <button id="advancedFiltersBtn" class="btn-secondary">Filtre Avansate</button>
+                    </div>
                 </div>
                 <form id="clientForm" style="display: none;">
                     <label for="clientName">Nume complet:</label>

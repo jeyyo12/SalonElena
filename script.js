@@ -83,12 +83,19 @@ if (document.getElementById('clientForm')) {
     let currentPage = 1;
     const itemsPerPage = 6;
 
+    let currentFilter = 'all';
+
     function renderClients() {
-        const sexFilter = document.getElementById('filterSex').value;
-        const tagFilter = document.getElementById('filterTag').value;
         let displayClients = filteredClients.filter(client => {
-            return (!sexFilter || client.sex === sexFilter) && (!tagFilter || client.tag === tagFilter);
+            if (currentFilter === 'all') return true;
+            if (currentFilter === 'vip') return client.tag === 'VIP';
+            if (currentFilter === 'nou') return client.tag === 'Nou';
+            if (currentFilter === 'fidel') return client.tag === 'Fidel';
+            if (currentFilter === 'femei') return client.sex === 'Femei';
+            if (currentFilter === 'barbati') return client.sex === 'Bărbați';
+            return true;
         });
+
         const start = (currentPage - 1) * itemsPerPage;
         const end = start + itemsPerPage;
         const pageClients = displayClients.slice(start, end);
@@ -96,17 +103,38 @@ if (document.getElementById('clientForm')) {
         clientsList.innerHTML = '';
         pageClients.forEach((client, index) => {
             const card = document.createElement('div');
-            card.className = 'client-card';
+            card.className = 'luxury-client-card';
+            const avatarSrc = client.image ? `images/${client.image}.jpg` : '';
+            const monogram = client.name.charAt(0).toUpperCase();
+            const phoneDisplay = client.phone || '—';
+            const emailDisplay = client.email || 'Necompletat';
+            const lastVisit = client.visits && client.visits.length > 0 ? new Date(client.visits[client.visits.length - 1]).toLocaleDateString('ro-RO') : 'Nicio vizită';
+            const favoriteService = client.work ? client.work.split(',')[0] : 'Nespecificat';
+            const totalSpent = client.totalSpent ? client.totalSpent + ' RON' : '0 RON';
+
             card.innerHTML = `
-                <img src="${client.image ? `images/${client.image}.jpg` : 'https://via.placeholder.com/56?text=' + client.name.charAt(0)}" alt="${client.name}" class="client-avatar">
-                <div class="client-info">
-                    <h3>${client.name}</h3>
-                    <p>Telefon: ${client.phone}</p>
-                    <p>Email: ${client.email || 'N/A'}</p>
-                    <p>Tag: ${client.tag || 'Niciunul'}</p>
+                <div class="card-avatar">
+                    ${avatarSrc ? `<img src="${avatarSrc}" alt="${client.name}">` : `<div class="monogram">${monogram}</div>`}
                 </div>
-                <div class="client-actions">
-                    <button class="edit-btn" onclick="editClient(${start + index})"><i class="fas fa-edit"></i></button>
+                <div class="card-content">
+                    <div class="card-header">
+                        <h3 class="client-name">${client.name}</h3>
+                        ${client.tag === 'VIP' ? '<span class="vip-badge">VIP</span>' : ''}
+                    </div>
+                    <div class="card-contact">
+                        <span class="contact-item"><i class="fas fa-phone"></i> ${phoneDisplay}</span>
+                        <span class="contact-item"><i class="fas fa-envelope"></i> ${emailDisplay}</span>
+                    </div>
+                    <div class="card-stats">
+                        <span class="stat-item"><i class="fas fa-calendar"></i> ${lastVisit}</span>
+                        <span class="stat-item"><i class="fas fa-cut"></i> ${favoriteService}</span>
+                        <span class="stat-item"><i class="fas fa-dollar-sign"></i> ${totalSpent}</span>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="action-btn view-btn" onclick="viewClient(${start + index})" title="Vezi detalii"><i class="fas fa-eye"></i></button>
+                    <button class="action-btn edit-btn" onclick="editClient(${start + index})" title="Editează"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn delete-btn" onclick="deleteClient(${start + index})" title="Șterge"><i class="fas fa-trash"></i></button>
                 </div>
             `;
             clientsList.appendChild(card);
@@ -139,7 +167,7 @@ if (document.getElementById('clientForm')) {
         const sex = document.getElementById('clientSex').value;
         const notes = document.getElementById('clientNotes').value;
         const tag = document.getElementById('clientTag').value;
-        clients.push({ name, phone, email, sex, notes, tag, work: '', image: '', visits: [] });
+        clients.push({ name, phone, email, sex, notes, tag, work: '', image: '', visits: [], totalSpent: 0 });
         localStorage.setItem('clients', JSON.stringify(clients));
         filteredClients = [...clients];
         renderClients();
@@ -154,14 +182,15 @@ if (document.getElementById('clientForm')) {
         renderClients();
     });
 
-    document.getElementById('filterSex').addEventListener('change', () => {
-        currentPage = 1;
-        renderClients();
-    });
-
-    document.getElementById('filterTag').addEventListener('change', () => {
-        currentPage = 1;
-        renderClients();
+    // Filter chips event listeners
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentFilter = chip.dataset.filter;
+            currentPage = 1;
+            renderClients();
+        });
     });
 
     addClientBtn.addEventListener('click', () => {
@@ -187,6 +216,20 @@ if (document.getElementById('clientForm')) {
         const newWork = prompt('Editează lucrări:', client.work);
         if (newWork !== null) {
             clients[index].work = newWork;
+            localStorage.setItem('clients', JSON.stringify(clients));
+            filteredClients = [...clients];
+            renderClients();
+        }
+    };
+
+    window.viewClient = (index) => {
+        const client = clients[index];
+        alert(`Detalii client:\nNume: ${client.name}\nTelefon: ${client.phone || 'Necompletat'}\nEmail: ${client.email || 'Necompletat'}\nObservații: ${client.notes || 'Nicio observație'}`);
+    };
+
+    window.deleteClient = (index) => {
+        if (confirm(`Ești sigur că vrei să ștergi clientul ${clients[index].name}?`)) {
+            clients.splice(index, 1);
             localStorage.setItem('clients', JSON.stringify(clients));
             filteredClients = [...clients];
             renderClients();
