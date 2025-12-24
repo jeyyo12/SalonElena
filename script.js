@@ -66,7 +66,6 @@ if (document.getElementById('clientForm')) {
         clientsList.innerHTML = '';
         clients.forEach((client, index) => {
             const clientDiv = document.createElement('div');
-            clientDiv.className = 'client-card';
             clientDiv.innerHTML = `
                 <h3>${client.name}</h3>
                 <ul>
