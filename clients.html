@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clienți - Salon Elena</title>
+    <title>Clienți Femei - Salon Elena</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header>
-        <h1>Clienți Femei - Salon Elena</h1>
+        <h1><i class="fas fa-cut"></i> Clienți <i class="fas fa-brush"></i></h1>
         <nav>
             <ul>
                 <li><a href="index.html">Management</a></li>
@@ -18,16 +19,30 @@
         </nav>
     </header>
     <main>
-        <h2>Adaugă Client</h2>
-        <form id="clientForm">
+        <div class="tabs">
+            <button class="tab active">Clients List</button>
+            <button class="tab">Appointments</button>
+            <button class="tab">Services</button>
+            <button class="tab">Billing</button>
+        </div>
+        <div class="action-bar">
+            <input type="text" id="search" placeholder="Search clients...">
+            <button id="addClientBtn">+ Add New Client</button>
+            <button id="filterBtn">Filter <i class="fas fa-filter"></i></button>
+        </div>
+        <form id="clientForm" style="display: none;">
             <label for="clientName">Nume Client:</label>
             <input type="text" id="clientName" required>
             <label for="clientImage">Nume Imagine (fără extensie):</label>
             <input type="text" id="clientImage" placeholder="Ex: MariaPopescu">
             <button type="submit">Adaugă</button>
         </form>
-        <h2>Lista Clienți</h2>
         <div id="clientsList">
+        </div>
+        <div class="pagination">
+            <button id="prevBtn">Prev</button>
+            <span id="pageInfo">Showing 1–6 of 10 Clients</span>
+            <button id="nextBtn">Next</button>
         </div>
     </main>
     <footer>

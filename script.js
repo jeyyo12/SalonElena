@@ -57,26 +57,58 @@ if (document.getElementById('stockForm')) {
 if (document.getElementById('clientForm')) {
     const clientForm = document.getElementById('clientForm');
     const clientsList = document.getElementById('clientsList');
+    const searchInput = document.getElementById('search');
+    const addClientBtn = document.getElementById('addClientBtn');
+    const filterBtn = document.getElementById('filterBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const pageInfo = document.getElementById('pageInfo');
 
     let clients = JSON.parse(localStorage.getItem('clients')) || [];
+    let filteredClients = [...clients];
+    let currentPage = 1;
+    const itemsPerPage = 6;
 
     function renderClients() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageClients = filteredClients.slice(start, end);
+
         clientsList.innerHTML = '';
-        clients.forEach((client, index) => {
-            const clientDiv = document.createElement('div');
-            clientDiv.style.cssText = 'background: rgba(42, 42, 42, 0.9); padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-bottom: 1rem; transform: rotateX(0.5deg); transition: transform 0.3s;';
-            clientDiv.innerHTML = `
-                <h3 style="margin-top: 0;">${client.name}</h3>
-                <img src="${client.image ? `images/${client.image}.jpg` : 'https://via.placeholder.com/100?text=Fără+Imagine'}" alt="${client.name}" style="width:100px; height:100px; border-radius:10px; margin-bottom:1rem;">
-                <label for="work${index}">Lucrări efectuate:</label>
-                <textarea id="work${index}" rows="4" style="width: 100%; padding: 0.5rem; border: 2px solid #7b1fa2; border-radius: 10px; background-color: #2a2a2a; color: #e0e0e0; font-family: 'Georgia', serif; font-size: 1rem; resize: vertical;">${client.work || ''}</textarea>
-                <button onclick="saveWork(${index})" style="margin-top: 0.5rem;">Salvează Lucrări</button>
-                <button onclick="removeClient(${index})" style="margin-top: 0.5rem;">Șterge Client</button>
+        pageClients.forEach((client, index) => {
+            const card = document.createElement('div');
+            card.className = 'client-card';
+            card.innerHTML = `
+                <img src="${client.image ? `images/${client.image}.jpg` : 'https://via.placeholder.com/56?text=No+Img'}" alt="${client.name}" class="client-avatar">
+                <div class="client-info">
+                    <h3>${client.name}</h3>
+                    <p>Lucrări: ${client.work || 'N/A'}</p>
+                </div>
+                <div class="client-actions">
+                    <button class="edit-btn" onclick="editClient(${start + index})"><i class="fas fa-edit"></i></button>
+                </div>
             `;
-            clientDiv.onmouseover = () => clientDiv.style.transform = 'rotateX(0deg) translateZ(5px)';
-            clientDiv.onmouseout = () => clientDiv.style.transform = 'rotateX(0.5deg)';
-            clientsList.appendChild(clientDiv);
+            clientsList.appendChild(card);
         });
+
+        updatePagination();
+    }
+
+    function updatePagination() {
+        const total = filteredClients.length;
+        const start = (currentPage - 1) * itemsPerPage + 1;
+        const end = Math.min(currentPage * itemsPerPage, total);
+        pageInfo.textContent = `Showing ${start}–${end} of ${total} Clients`;
+
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === Math.ceil(total / itemsPerPage);
+    }
+
+    function filterClients() {
+        const query = searchInput.value.toLowerCase();
+        filteredClients = clients.filter(client => client.name.toLowerCase().includes(query));
+        currentPage = 1;
+        renderClients();
     }
 
     clientForm.addEventListener('submit', (e) => {
@@ -85,23 +117,45 @@ if (document.getElementById('clientForm')) {
         const image = document.getElementById('clientImage').value;
         clients.push({ name, work: '', image });
         localStorage.setItem('clients', JSON.stringify(clients));
+        filteredClients = [...clients];
         renderClients();
         clientForm.reset();
+        clientForm.style.display = 'none';
     });
 
-    window.saveWork = (index) => {
-        const work = document.getElementById(`work${index}`).value;
-        clients[index].work = work;
-        localStorage.setItem('clients', JSON.stringify(clients));
-        alert('Lucrări salvate!');
+    searchInput.addEventListener('input', filterClients);
+
+    addClientBtn.addEventListener('click', () => {
+        clientForm.style.display = clientForm.style.display === 'none' ? 'block' : 'none';
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderClients();
+        }
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (currentPage < Math.ceil(filteredClients.length / itemsPerPage)) {
+            currentPage++;
+            renderClients();
+        }
+    });
+
+    window.editClient = (index) => {
+        const client = clients[index];
+        const newWork = prompt('Editează lucrări:', client.work);
+        if (newWork !== null) {
+            clients[index].work = newWork;
+            localStorage.setItem('clients', JSON.stringify(clients));
+            filteredClients = [...clients];
+            renderClients();
+        }
     };
 
-    window.removeClient = (index) => {
-        clients.splice(index, 1);
-        localStorage.setItem('clients', JSON.stringify(clients));
-        renderClients();
-    };
-
+    // Initial render
+    filteredClients = [...clients];
     renderClients();
 }
 
