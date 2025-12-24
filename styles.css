@@ -1,16 +1,18 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Georgia', serif;
     margin: 0;
     padding: 0;
-    background-color: #f8f4f0;
-    color: #333;
+    background-color: #fefefe;
+    color: #2c2c2c;
+    line-height: 1.6;
 }
 
 header {
-    background-color: #e91e63;
-    color: white;
-    padding: 1rem;
+    background: linear-gradient(135deg, #ffb3ba, #ffdfba);
+    color: #fff;
+    padding: 2rem;
     text-align: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 nav ul {
@@ -20,62 +22,117 @@ nav ul {
 
 nav ul li {
     display: inline;
-    margin: 0 1rem;
+    margin: 0 1.5rem;
 }
 
 nav a {
-    color: white;
+    color: #fff;
     text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+
+nav a:hover {
+    color: #ffe4e1;
 }
 
 main {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 3rem;
 }
 
 .welcome {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
 }
 
 .services {
-    background-color: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    text-align: center;
 }
 
 footer {
     text-align: center;
-    padding: 1rem;
-    background-color: #e91e63;
-    color: white;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #ffb3ba, #ffdfba);
+    color: #fff;
     position: fixed;
     bottom: 0;
     width: 100%;
+    box-shadow: 0 -4px 8px rgba(0,0,0,0.1);
 }
 
 form {
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 input, button {
-    padding: 0.5rem;
+    padding: 0.75rem;
     margin: 0.5rem 0;
+    border: 2px solid #ffb3ba;
+    border-radius: 50px;
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+}
+
+input:focus {
+    outline: none;
+    border-color: #ffdfba;
+    box-shadow: 0 0 5px rgba(255, 179, 186, 0.5);
+}
+
+button {
+    background: linear-gradient(135deg, #ffb3ba, #ffdfba);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 th, td {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 12px;
     text-align: left;
 }
 
 th {
-    background-color: #f2f2f2;
+    background: linear-gradient(135deg, #ffb3ba, #ffdfba);
+    color: #fff;
+    font-weight: bold;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+ul li {
+    margin: 1rem 0;
+    font-size: 1.1rem;
 }
