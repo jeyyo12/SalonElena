@@ -195,24 +195,67 @@ if (document.getElementById('clientForm')) {
 
     // Appointments
     let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+    let currentDateFilter = 'today';
+
+    function checkConflicts() {
+        const dateInput = document.getElementById('apptDate');
+        const durationInput = document.getElementById('apptDuration');
+        const conflictEl = document.getElementById('conflictChecker');
+
+        if (!dateInput.value || !durationInput.value) {
+            conflictEl.style.display = 'none';
+            return;
+        }
+
+        const selectedDate = new Date(dateInput.value);
+        const duration = parseInt(durationInput.value);
+        const endTime = new Date(selectedDate.getTime() + duration * 60000);
+
+        let conflict = false;
+        let conflictTime = '';
+
+        appointments.forEach(appt => {
+            if (appt.status === 'Anulată') return;
+            const apptStart = new Date(appt.date);
+            const apptEnd = new Date(apptStart.getTime() + appt.duration * 60000);
+
+            if ((selectedDate >= apptStart && selectedDate < apptEnd) ||
+                (endTime > apptStart && endTime <= apptEnd) ||
+                (selectedDate <= apptStart && endTime >= apptEnd)) {
+                conflict = true;
+                conflictTime = `${apptStart.toLocaleTimeString('ro-RO', {hour: '2-digit', minute: '2-digit'})}–${apptEnd.toLocaleTimeString('ro-RO', {hour: '2-digit', minute: '2-digit'})}`;
+            }
+        });
+
+        if (conflict) {
+            conflictEl.className = 'conflict-status conflict';
+            conflictEl.textContent = `Se suprapune cu ${conflictTime}`;
+        } else {
+            conflictEl.className = 'conflict-status available';
+            conflictEl.textContent = 'Slot disponibil';
+        }
+        conflictEl.style.display = 'block';
+    }
 
     function renderAppointments() {
         const list = document.getElementById('appointmentsList');
         const statusFilter = document.getElementById('filterAppointmentStatus').value;
-        const dateFilter = document.getElementById('filterAppointmentDate').value;
         const today = new Date();
         today.setHours(0,0,0,0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
+        const weekEnd = new Date(today);
+        weekEnd.setDate(weekEnd.getDate() + 7);
 
         list.innerHTML = '';
         appointments
             .filter(appt => {
                 if (statusFilter && appt.status !== statusFilter) return false;
                 const apptDate = new Date(appt.date);
-                if (dateFilter === 'today' && apptDate.toDateString() !== today.toDateString()) return false;
-                if (dateFilter === 'future' && apptDate < today) return false;
-                if (dateFilter === 'completed' && appt.status !== 'Finalizată') return false;
+                if (currentDateFilter === 'today' && apptDate.toDateString() !== today.toDateString()) return false;
+                if (currentDateFilter === 'tomorrow' && apptDate.toDateString() !== tomorrow.toDateString()) return false;
+                if (currentDateFilter === 'week' && (apptDate < today || apptDate > weekEnd)) return false;
+                // 'all' shows all
                 return true;
             })
             .forEach((appt, index) => {
@@ -254,21 +297,39 @@ if (document.getElementById('clientForm')) {
         });
     }
 
-    if (document.getElementById('appointmentForm')) {
-        const apptForm = document.getElementById('appointmentForm');
-        apptForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const client = document.getElementById('apptClient').value;
-            const service = document.getElementById('apptService').value;
-            const date = document.getElementById('apptDate').value;
-            const duration = document.getElementById('apptDuration').value;
-            appointments.push({ client, service, date, duration: parseInt(duration), status: 'Programată' });
-            localStorage.setItem('appointments', JSON.stringify(appointments));
+    // Event listeners for chips
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentDateFilter = chip.dataset.filter;
             renderAppointments();
-            apptForm.reset();
-            apptForm.style.display = 'none';
         });
-    }
+    });
+
+    document.getElementById('saveAppointmentBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        const client = document.getElementById('apptClient').value;
+        const service = document.getElementById('apptService').value;
+        const date = document.getElementById('apptDate').value;
+        const duration = document.getElementById('apptDuration').value;
+
+        if (!client || !service || !date || !duration) {
+            alert('Completează toate câmpurile!');
+            return;
+        }
+
+        appointments.push({ client, service, date, duration: parseInt(duration), status: 'Programată' });
+        localStorage.setItem('appointments', JSON.stringify(appointments));
+        renderAppointments();
+        document.getElementById('appointmentFormCard').reset();
+        document.getElementById('appointmentFormCard').style.display = 'none';
+        document.getElementById('conflictChecker').style.display = 'none';
+    });
+
+    // Conflict checker listeners
+    document.getElementById('apptDate').addEventListener('change', checkConflicts);
+    document.getElementById('apptDuration').addEventListener('input', checkConflicts);
 
     window.completeAppointment = (index) => {
         appointments[index].status = 'Finalizată';
@@ -450,7 +511,7 @@ if (document.getElementById('clientForm')) {
     }
 
     document.getElementById('addAppointmentBtn').addEventListener('click', () => {
-        document.getElementById('appointmentForm').style.display = document.getElementById('appointmentForm').style.display === 'none' ? 'block' : 'none';
+        document.getElementById('appointmentFormCard').style.display = document.getElementById('appointmentFormCard').style.display === 'none' ? 'block' : 'none';
     });
 
     document.getElementById('addServiceBtn').addEventListener('click', () => {
@@ -468,7 +529,6 @@ if (document.getElementById('clientForm')) {
     });
 
     document.getElementById('filterAppointmentStatus').addEventListener('change', renderAppointments);
-    document.getElementById('filterAppointmentDate').addEventListener('change', renderAppointments);
 
     // Initial renders
     filteredClients = [...clients];

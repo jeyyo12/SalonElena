@@ -79,31 +79,47 @@
             <!-- Appointments -->
             <div id="appointments-tab" class="tab-pane">
                 <h3>Programări Inteligente</h3>
+                <div class="summary-chips">
+                    <button class="chip active" data-filter="today">Astăzi</button>
+                    <button class="chip" data-filter="tomorrow">Mâine</button>
+                    <button class="chip" data-filter="week">Săptămâna asta</button>
+                    <button class="chip" data-filter="all">Toate</button>
+                </div>
                 <div class="action-bar">
-                    <button id="addAppointmentBtn">+ Adaugă Programare</button>
+                    <button id="addAppointmentBtn">+ Programare Nouă</button>
                     <select id="filterAppointmentStatus">
                         <option value="">Toate</option>
                         <option value="Programată">Programată</option>
                         <option value="Finalizată">Finalizată</option>
                         <option value="Anulată">Anulată</option>
                     </select>
-                    <select id="filterAppointmentDate">
-                        <option value="today">Astăzi</option>
-                        <option value="future">Viitoare</option>
-                        <option value="completed">Finalizate</option>
-                    </select>
                 </div>
-                <form id="appointmentForm" style="display: none;">
-                    <label for="apptClient">Client:</label>
-                    <select id="apptClient" required></select>
-                    <label for="apptService">Serviciu:</label>
-                    <select id="apptService" required></select>
-                    <label for="apptDate">Dată & Oră:</label>
-                    <input type="datetime-local" id="apptDate" required>
-                    <label for="apptDuration">Durată estimată (minute):</label>
-                    <input type="number" id="apptDuration" min="15" max="480" required>
-                    <button type="submit">Adaugă Programare</button>
-                </form>
+                <div id="appointmentFormCard" class="form-card" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="apptClient">Client</label>
+                            <select id="apptClient" class="dark-input" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="apptService">Serviciu</label>
+                            <select id="apptService" class="dark-input" required></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="apptDate">Dată & Oră</label>
+                            <input type="datetime-local" id="apptDate" class="dark-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="apptDuration">Durată (minute)</label>
+                            <input type="number" id="apptDuration" class="dark-input" min="15" max="480" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" id="saveAppointmentBtn" class="cta-button">Salvează Programarea</button>
+                        </div>
+                    </div>
+                    <div id="conflictChecker" class="conflict-status" style="display: none;"></div>
+                </div>
                 <ul id="appointmentsList"></ul>
             </div>
             <!-- Services -->

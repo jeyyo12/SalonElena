@@ -315,33 +315,115 @@ ul li {
     gap: 0.5rem;
 }
 
-.billing-summary {
+.summary-chips {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     margin-bottom: 1rem;
 }
 
-.summary-card {
+.chip {
     background: #141218;
     border: 1px solid #2A2230;
-    border-radius: 10px;
-    padding: 1rem;
-    flex: 1;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.summary-card h4 {
-    margin: 0 0 0.5rem 0;
     color: #B9B0A3;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
     font-size: 14px;
 }
 
-.summary-card p {
-    margin: 0;
+.chip.active {
+    background: #C8A24A;
+    color: #0B0B0E;
+    border-color: #C8A24A;
+}
+
+.chip:hover {
+    border-color: #C8A24A;
     color: #C8A24A;
-    font-size: 24px;
+}
+
+.form-card {
+    background: #141218;
+    border: 1px solid #2A2230;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: end;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    color: #B9B0A3;
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.dark-input {
+    background: #14141B;
+    border: 1px solid #2A2A35;
+    border-radius: 8px;
+    color: #F2EDE3;
+    padding: 0.75rem;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.dark-input:focus {
+    outline: none;
+    border-color: #8A2BE2;
+    box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2);
+}
+
+.cta-button {
+    background: linear-gradient(135deg, #C8A24A, #8A2BE2);
+    border: none;
+    color: #0B0B0E;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 16px;
     font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.conflict-status {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.conflict-status.available {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid #22C55E;
+    color: #22C55E;
+}
+
+.conflict-status.conflict {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #EF4444;
+    color: #EF4444;
 }
 
 /* Dashboard */
