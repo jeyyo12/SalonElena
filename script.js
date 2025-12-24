@@ -67,6 +67,7 @@ if (document.getElementById('clientForm')) {
             clientDiv.style.cssText = 'background: rgba(42, 42, 42, 0.9); padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-bottom: 1rem; transform: rotateX(0.5deg); transition: transform 0.3s;';
             clientDiv.innerHTML = `
                 <h3 style="margin-top: 0;">${client.name}</h3>
+                <img src="${client.image || 'https://via.placeholder.com/100?text=Fără+Imagine'}" alt="${client.name}" style="width:100px; height:100px; border-radius:10px; margin-bottom:1rem;">
                 <label for="work${index}">Lucrări efectuate:</label>
                 <textarea id="work${index}" rows="4" style="width: 100%; padding: 0.5rem; border: 2px solid #7b1fa2; border-radius: 10px; background-color: #2a2a2a; color: #e0e0e0; font-family: 'Georgia', serif; font-size: 1rem; resize: vertical;">${client.work || ''}</textarea>
                 <button onclick="saveWork(${index})" style="margin-top: 0.5rem;">Salvează Lucrări</button>
@@ -81,7 +82,8 @@ if (document.getElementById('clientForm')) {
     clientForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('clientName').value;
-        clients.push({ name, work: '' });
+        const image = document.getElementById('clientImage').value;
+        clients.push({ name, work: '', image });
         localStorage.setItem('clients', JSON.stringify(clients));
         renderClients();
         clientForm.reset();
