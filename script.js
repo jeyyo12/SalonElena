@@ -12,9 +12,13 @@ if (document.getElementById('stockForm')) {
         stock.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
+                <td><img src="${item.image || 'https://via.placeholder.com/50?text=No+Image'}" alt="${item.name}" style="width:50px; height:50px;"></td>
                 <td>${item.name}</td>
                 <td>${item.quantity}</td>
-                <td><button onclick="removeStock(${index})">Șterge</button></td>
+                <td>
+                    <button onclick="increaseQuantity(${index})">Mărește Cantitate</button>
+                    <button onclick="removeStock(${index})">Șterge</button>
+                </td>
             `;
             stockTable.appendChild(row);
         });
@@ -24,11 +28,21 @@ if (document.getElementById('stockForm')) {
         e.preventDefault();
         const name = document.getElementById('productName').value;
         const quantity = document.getElementById('quantity').value;
-        stock.push({ name, quantity: parseInt(quantity) });
+        const image = document.getElementById('productImage').value;
+        stock.push({ name, quantity: parseInt(quantity), image });
         localStorage.setItem('stock', JSON.stringify(stock));
         renderStock();
         stockForm.reset();
     });
+
+    window.increaseQuantity = (index) => {
+        const newQty = prompt('Introdu noua cantitate:', stock[index].quantity);
+        if (newQty !== null && !isNaN(newQty)) {
+            stock[index].quantity = parseInt(newQty);
+            localStorage.setItem('stock', JSON.stringify(stock));
+            renderStock();
+        }
+    };
 
     window.removeStock = (index) => {
         stock.splice(index, 1);
