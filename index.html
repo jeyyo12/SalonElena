@@ -45,6 +45,29 @@
                     <div class="header-date" id="dateDisplay"></div>
                 </div>
 
+                <!-- Data Sync Status Bar -->
+                <div class="sync-status-bar">
+                    <div class="sync-item">
+                        <span class="sync-label">Status Sincronizare:</span>
+                        <span class="sync-value" id="syncStatus">✓ Activ</span>
+                    </div>
+                    <div class="sync-item">
+                        <span class="sync-label">Tranzacții:</span>
+                        <span class="sync-value" id="syncTransactions">0</span>
+                    </div>
+                    <div class="sync-item">
+                        <span class="sync-label">Clienți:</span>
+                        <span class="sync-value" id="syncClients">0</span>
+                    </div>
+                    <div class="sync-item">
+                        <span class="sync-label">Ultima Sincronizare:</span>
+                        <span class="sync-value" id="syncTime">Acum</span>
+                    </div>
+                    <button class="btn-sync-reset" id="btnSyncCheck" title="Verifică sincronizare">
+                        <span class="icon-sync">🔄</span>
+                    </button>
+                </div>
+
                 <!-- KPI Cards -->
                 <div class="kpi-grid">
                     <div class="kpi-card">

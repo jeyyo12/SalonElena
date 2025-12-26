@@ -32,6 +32,9 @@ const App = {
      * Initialize application
      */
     init() {
+        // Initialize auto-sync storage first
+        Storage.init();
+        
         this.loadData();
         this.setupEventListeners();
         this.render();
@@ -2337,10 +2340,63 @@ const App = {
      */
     render() {
         this.renderDashboard();
+    },
+
+    /**
+     * Update sync status display on dashboard
+     */
+    updateSyncStatus() {
+        const status = Storage.verifyData();
+        const syncStatus = document.getElementById('syncStatus');
+        const syncTransactions = document.getElementById('syncTransactions');
+        const syncClients = document.getElementById('syncClients');
+        const syncTime = document.getElementById('syncTime');
+
+        if (syncStatus) syncStatus.textContent = '✓ Activ';
+        if (syncTransactions) syncTransactions.textContent = status.transactions;
+        if (syncClients) syncClients.textContent = status.clients;
+        
+        // Format last sync time
+        if (syncTime) {
+            if (status.lastSync === 'never') {
+                syncTime.textContent = 'Niciodată';
+            } else {
+                const lastSyncTime = new Date(status.lastSync);
+                const now = new Date();
+                const diffMs = now - lastSyncTime;
+                const diffSec = Math.floor(diffMs / 1000);
+                const diffMin = Math.floor(diffSec / 60);
+                
+                if (diffSec < 60) {
+                    syncTime.textContent = 'Acum';
+                } else if (diffMin < 60) {
+                    syncTime.textContent = `Acum ${diffMin} min`;
+                } else {
+                    syncTime.textContent = lastSyncTime.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+                }
+            }
+        }
     }
 };
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
+    
+    // Setup sync status update button
+    const btnSyncCheck = document.getElementById('btnSyncCheck');
+    if (btnSyncCheck) {
+        btnSyncCheck.addEventListener('click', () => {
+            App.updateSyncStatus();
+            UI.showToast('Sincronizare verificată', 'success');
+        });
+    }
+
+    // Update sync status display every 30 seconds
+    setInterval(() => {
+        if (AppState.currentTab === 'dashboard') {
+            App.updateSyncStatus();
+        }
+    }, 30000);
 });
+
