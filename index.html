@@ -3,51 +3,801 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Salon Elena</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Salon Elena - Premium Hairstyle Management</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <header>
-        <h1><i class="fas fa-spa"></i> Salon Elena <i class="fas fa-spa"></i></h1>
-        <nav>
-            <ul>
-                <li><a href="index.html" class="active">Dashboard</a></li>
-                <li><a href="clients.html">Clienți</a></li>
-                <li><a href="earnings.html">Încasări Zilnice</a></li>
-                <li><a href="settings.html">Setări</a></li>
-            </ul>
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="12" r="6" fill="url(#grad1)"/>
+                        <path d="M8 24c0-4.4 3.6-8 8-8s8 3.6 8 8H8Z" fill="url(#grad1)"/>
+                        <defs>
+                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#9D4EDD;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#E6B8A2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>Salon Elena</span>
+                </div>
+                <div class="nav-tabs">
+                    <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
+                    <button class="nav-tab" data-tab="clients">Clienți</button>
+                    <button class="nav-tab" data-tab="appointments">Programări</button>
+                    <button class="nav-tab" data-tab="transactions">Încasări</button>
+                    <button class="nav-tab" data-tab="accounting">Contabilitate</button>
+                    <button class="nav-tab" data-tab="history">Istoric</button>
+                    <button class="nav-tab" data-tab="services">Servicii</button>
+                </div>
+            </div>
         </nav>
-    </header>
-    <main>
-        <h2>Dashboard</h2>
-        <div class="dashboard-cards">
-            <div class="card">
-                <h3>Total Clienți</h3>
-                <p id="totalClients">0</p>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- DASHBOARD TAB -->
+            <section id="dashboard" class="tab-section active">
+                <div class="section-header">
+                    <h1>Dashboard</h1>
+                    <div class="header-date" id="dateDisplay"></div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Încasări Astazi</div>
+                        <div class="kpi-value" id="kpiIncome">0 RON</div>
+                        <div class="kpi-sub">Venituri</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Cheltuieli</div>
+                        <div class="kpi-value" id="kpiExpenses">0 RON</div>
+                        <div class="kpi-sub">Costuri</div>
+                    </div>
+                    <div class="kpi-card accent">
+                        <div class="kpi-label">Profit</div>
+                        <div class="kpi-value" id="kpiProfit">0 RON</div>
+                        <div class="kpi-sub">Net</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Clienți Serviți</div>
+                        <div class="kpi-value" id="kpiClients">0</div>
+                        <div class="kpi-sub">Astazi</div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Appointments Today -->
+                <div class="dashboard-section">
+                    <h2>Programări Astazi</h2>
+                    <div id="dashboardAppointments" class="appointments-list">
+                        <p class="empty-state">Nu sunt programări astazi</p>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="dashboard-section">
+                    <h2>Tranzacții Recente</h2>
+                    <div id="dashboardTransactions" class="transactions-list">
+                        <p class="empty-state">Nu sunt tranzacții</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CLIENTS TAB -->
+            <section id="clients" class="tab-section">
+                <div class="section-header">
+                    <h1>Clienți</h1>
+                    <button class="btn btn-primary" id="btnAddClient">+ Clientă Nouă</button>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="search-filters">
+                    <div class="search-box">
+                        <input type="text" id="clientSearch" placeholder="Caută clientă..." class="input-search">
+                    </div>
+                    <div class="filter-chips">
+                        <button class="chip active" data-filter="all">Toate</button>
+                        <button class="chip" data-filter="platinum">Platinum</button>
+                        <button class="chip" data-filter="vip">VIP</button>
+                        <button class="chip" data-filter="loyal">Loyal</button>
+                        <button class="chip" data-filter="new">New</button>
+                    </div>
+                </div>
+
+                <!-- Clients Grid -->
+                <div id="clientsGrid" class="clients-grid">
+                    <p class="empty-state">Nu sunt clienți. Adaugă prima clientă!</p>
+                </div>
+            </section>
+
+            <!-- APPOINTMENTS TAB -->
+            <section id="appointments" class="tab-section">
+                <div class="section-header">
+                    <h1>Programări</h1>
+                    <button type="button" class="btn btn-primary" id="btnAddAppointment">+ Nouă Programare</button>
+                </div>
+
+                <!-- Appointment Filters -->
+                <div class="appointment-filters">
+                    <button class="filter-btn active" data-filter="today">Astazi</button>
+                    <button class="filter-btn" data-filter="tomorrow">Mâine</button>
+                    <button class="filter-btn" data-filter="week">Săptămâna</button>
+                    <button class="filter-btn" data-filter="all">Toate</button>
+                </div>
+
+                <!-- Appointments List -->
+                <div id="appointmentsList" class="appointments-list">
+                    <p class="empty-state">Nu sunt programări</p>
+                </div>
+            </section>
+
+            <!-- TRANSACTIONS TAB -->
+            <section id="transactions" class="tab-section">
+                <div class="section-header">
+                    <h1>Încasări Zilnice</h1>
+                </div>
+
+                <!-- Date Picker -->
+                <div class="transaction-controls">
+                    <input type="date" id="transactionDate" class="input-date">
+                    <button class="btn btn-secondary" id="btnAddExpense">+ Cheltuiala Manuală</button>
+                </div>
+
+                <!-- KPI for Selected Date -->
+                <div class="transaction-kpi">
+                    <div class="kpi-small">
+                        <div class="kpi-label">Încasări</div>
+                        <div class="kpi-value" id="txIncome">0 RON</div>
+                    </div>
+                    <div class="kpi-small">
+                        <div class="kpi-label">Cheltuieli</div>
+                        <div class="kpi-value" id="txExpenses">0 RON</div>
+                    </div>
+                    <div class="kpi-small accent">
+                        <div class="kpi-label">Profit</div>
+                        <div class="kpi-value" id="txProfit">0 RON</div>
+                    </div>
+                    <div class="kpi-small">
+                        <div class="kpi-label">Clienți</div>
+                        <div class="kpi-value" id="txClients">0</div>
+                    </div>
+                </div>
+
+                <!-- Transactions Table -->
+                <div class="transaction-table">
+                    <div class="tx-filters">
+                        <button class="tx-filter active" data-type="all">Toate</button>
+                        <button class="tx-filter" data-type="income">Venituri</button>
+                        <button class="tx-filter" data-type="expense">Cheltuieli</button>
+                    </div>
+                    <div id="transactionsList" class="transactions-list">
+                        <p class="empty-state">Nu sunt tranzacții pentru aceasta zi</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HISTORY TAB -->
+            <section id="history" class="tab-section">
+                <div class="section-header">
+                    <h1>Istoric</h1>
+                    <button class="btn btn-secondary btn-sm" id="btnExportCSV">📥 Export CSV</button>
+                </div>
+
+                <!-- Period Toggle -->
+                <div class="period-toggle">
+                    <button class="period-btn active" data-period="day">Zi</button>
+                    <button class="period-btn" data-period="week">Săptămână</button>
+                    <button class="period-btn" data-period="month">Lună</button>
+                </div>
+
+                <!-- Period Selectors -->
+                <div class="period-selectors">
+                    <!-- Day Selector -->
+                    <div id="daySelector" class="selector-group active">
+                        <input type="date" id="historyDate" class="input-date">
+                    </div>
+
+                    <!-- Week Selector -->
+                    <div id="weekSelector" class="selector-group">
+                        <button class="btn-nav" id="prevWeek">◀ Săptămâna Anterioară</button>
+                        <span id="weekDisplay" class="period-display">Week</span>
+                        <button class="btn-nav" id="nextWeek">Săptămâna Următoare ▶</button>
+                    </div>
+
+                    <!-- Month Selector -->
+                    <div id="monthSelector" class="selector-group">
+                        <button class="btn-nav" id="prevMonth">◀ Luna Anterioară</button>
+                        <select id="monthSelect" class="input-dark">
+                            <option value="0">Ianuarie</option>
+                            <option value="1">Februarie</option>
+                            <option value="2">Martie</option>
+                            <option value="3">Aprilie</option>
+                            <option value="4">Mai</option>
+                            <option value="5">Iunie</option>
+                            <option value="6">Iulie</option>
+                            <option value="7">August</option>
+                            <option value="8">Septembrie</option>
+                            <option value="9">Octombrie</option>
+                            <option value="10">Noiembrie</option>
+                            <option value="11">Decembrie</option>
+                        </select>
+                        <select id="yearSelect" class="input-dark">
+                            <!-- Populated by JS -->
+                        </select>
+                        <button class="btn-nav" id="nextMonth">Luna Următoare ▶</button>
+                    </div>
+                </div>
+
+                <!-- Summary KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Încasări</div>
+                        <div class="kpi-value" id="historyIncome">0 RON</div>
+                        <div class="kpi-sub">Venituri</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Cheltuieli</div>
+                        <div class="kpi-value" id="historyExpenses">0 RON</div>
+                        <div class="kpi-sub">Costuri</div>
+                    </div>
+                    <div class="kpi-card accent">
+                        <div class="kpi-label">Profit Net</div>
+                        <div class="kpi-value" id="historyProfit">0 RON</div>
+                        <div class="kpi-sub">Rezultat</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Clienți Serviți</div>
+                        <div class="kpi-value" id="historyClients">0</div>
+                        <div class="kpi-sub">Distinct</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Nr. Tranzacții</div>
+                        <div class="kpi-value" id="historyTxCount">0</div>
+                        <div class="kpi-sub">Total</div>
+                    </div>
+                </div>
+
+                <!-- Day Breakdown (for week/month) -->
+                <div id="dayBreakdown" class="day-breakdown" style="display: none;">
+                    <h3>Detalii pe Zile</h3>
+                    <div class="breakdown-table">
+                        <div class="breakdown-header">
+                            <div class="col-date">Data</div>
+                            <div class="col-income">Încasări</div>
+                            <div class="col-expenses">Cheltuieli</div>
+                            <div class="col-profit">Profit</div>
+                            <div class="col-clients">Clienți</div>
+                        </div>
+                        <div id="breakdownBody" class="breakdown-body">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions List -->
+                <div class="history-transactions">
+                    <h3>Tranzacții</h3>
+                    <div class="tx-controls">
+                        <div class="tx-filters-history">
+                            <button class="tx-filter-history active" data-filter="all">Toate</button>
+                            <button class="tx-filter-history" data-filter="income">Venituri</button>
+                            <button class="tx-filter-history" data-filter="expense">Cheltuieli</button>
+                        </div>
+                        <input type="text" id="txSearch" placeholder="Caută după client/serviciu..." class="input-search">
+                    </div>
+                    <div id="historyTransactionsList" class="transactions-list">
+                        <p class="empty-state">Nu sunt tranzacții</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ACCOUNTING TAB -->
+            <section id="accounting" class="tab-section">
+                <div class="section-header">
+                    <h1>Contabilitate</h1>
+                    <div class="section-buttons">
+                        <button class="btn btn-secondary btn-sm" id="btnRecurringExpenses">⚙️ Cheltuieli Lunare</button>
+                        <button class="btn btn-secondary btn-sm" id="btnExportAccounting">📥 Export CSV</button>
+                    </div>
+                </div>
+
+                <!-- Filters Card -->
+                <div class="accounting-filters-card">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Interval Date</label>
+                            <div class="date-range">
+                                <input type="date" id="accDateStart" class="input-filter">
+                                <span class="date-separator">→</span>
+                                <input type="date" id="accDateEnd" class="input-filter">
+                            </div>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">Tip</label>
+                            <select id="accType" class="select-filter">
+                                <option value="all">Toate tranzacțiile</option>
+                                <option value="income">Doar Venituri</option>
+                                <option value="expense">Doar Cheltuieli</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">Status</label>
+                            <select id="accStatus" class="select-filter">
+                                <option value="all">Toate</option>
+                                <option value="confirmed">Confirmate</option>
+                                <option value="void">Anulate</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Metodă Plată</label>
+                            <div class="checkbox-group-modern">
+                                <label class="checkbox-label"><input type="checkbox" value="cash" class="acc-payment-method"> Numerar</label>
+                                <label class="checkbox-label"><input type="checkbox" value="card" class="acc-payment-method"> Card</label>
+                                <label class="checkbox-label"><input type="checkbox" value="transfer" class="acc-payment-method"> Transfer</label>
+                            </div>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">Categorie</label>
+                            <select id="accCategories" class="select-filter" multiple size="3">
+                                <option value="">-- Toate --</option>
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filters-grid">
+                        <div class="filter-group filter-search">
+                            <label class="filter-label">Căutare</label>
+                            <input type="text" id="accSearch" placeholder="Client / Serviciu / Notă..." class="input-filter input-search-large">
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn btn-secondary btn-sm" id="btnResetFilters">↻ Resetează</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Venituri</div>
+                        <div class="kpi-value" id="accIncomeTotal">0 RON</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Total Cheltuieli</div>
+                        <div class="kpi-value" id="accExpenseTotal">0 RON</div>
+                    </div>
+                    <div class="kpi-card accent">
+                        <div class="kpi-label">Profit Net</div>
+                        <div class="kpi-value" id="accProfitTotal">0 RON</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Cash</div>
+                        <div class="kpi-value" id="accCashTotal">0 RON</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Card</div>
+                        <div class="kpi-value" id="accCardTotal">0 RON</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Transfer</div>
+                        <div class="kpi-value" id="accTransferTotal">0 RON</div>
+                    </div>
+                </div>
+
+                <!-- Tabs: List | Reports (Manual input buttons hidden - read-only mode) -->
+                <div class="accounting-tabs">
+                    <button class="acc-tab-btn active" data-acc-tab="list">📋 Lista Tranzacții</button>
+                    <button class="acc-tab-btn" data-acc-tab="reports">📊 Rapoarte & Analiză</button>
+                </div>
+
+                <!-- TAB: List Transactions -->
+                <div id="acc-tab-list" class="acc-tab-content active">
+                    <div id="accTransactionsList" class="accounting-transactions">
+                        <p class="empty-state">Nu sunt tranzacții</p>
+                    </div>
+                </div>
+
+                <!-- TAB: Reports -->
+                <div id="acc-tab-reports" class="acc-tab-content">
+                    <div class="reports-container">
+                        <h3>Rapoarte & Analiză</h3>
+
+                        <!-- Daily Expenses Summary -->
+                        <div class="report-section">
+                            <h4>💰 Cheltuieli pe Zile</h4>
+                            <div id="dailyExpenseSummary" class="daily-summary-table">
+                                <p class="empty-state">Nu există cheltuieli pentru perioada selectată</p>
+                            </div>
+                        </div>
+
+                        <!-- Daily Profit Summary -->
+                        <div class="report-section">
+                            <h4>📈 Profit pe Zile</h4>
+                            <div id="dailyProfitSummary" class="daily-summary-table">
+                                <p class="empty-state">Nu există tranzacții pentru perioada selectată</p>
+                            </div>
+                        </div>
+
+                        <div class="report-section">
+                            <h4>🏆 Top Categorii Cheltuieli</h4>
+                            <div id="topExpenseCategories" class="report-list">
+                                <p class="empty-state">Nu există cheltuieli</p>
+                            </div>
+                        </div>
+
+                        <div class="report-section">
+                            <h4>⭐ Top Servicii Venituri</h4>
+                            <div id="topServices" class="report-list">
+                                <p class="empty-state">Nu există venituri</p>
+                            </div>
+                        </div>
+
+                        <div class="report-section">
+                            <h4>📊 Breakdown Complet pe Zile</h4>
+                            <div id="dayBreakdownAccounting" class="breakdown-table">
+                                <p class="empty-state">Nu există tranzacții</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SERVICES TAB -->
+            <section id="services" class="tab-section">
+                <div class="section-header">
+                    <h1>Servicii</h1>
+                    <button class="btn btn-primary" id="btnAddService">+ Serviciu Nou</button>
+                </div>
+
+                <!-- Services List -->
+                <div id="servicesList" class="services-grid">
+                    <p class="empty-state">Nu sunt servicii. Adaugă primul serviciu!</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modalOverlay" class="modal-overlay"></div>
+
+    <!-- Modal Client -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2>Clientă</h2>
+
+            <div class="modal-tabs">
+                <button class="modal-tab active" data-modal-tab="info">Informații</button>
+                <button class="modal-tab" data-modal-tab="gallery">Galerie</button>
+                <button class="modal-tab" data-modal-tab="appointments">Programări</button>
+                <button class="modal-tab" data-modal-tab="stats">Statistici</button>
             </div>
-            <div class="card">
-                <h3>Încasări Astăzi</h3>
-                <p id="todayEarnings">0 RON</p>
+
+            <!-- Info Tab -->
+            <div class="modal-tab-content active" data-tab-content="info">
+                <form id="clientForm">
+                    <div class="form-group">
+                        <label>Nume Complet *</label>
+                        <input type="text" id="clientName" required placeholder="ex: Elena Popescu" class="input-dark">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon *</label>
+                        <input type="tel" id="clientPhone" required placeholder="ex: 0723456789" class="input-dark">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="clientEmail" placeholder="optional" class="input-dark">
+                    </div>
+                    <div class="form-group">
+                        <label>Notițe / Preferințe</label>
+                        <textarea id="clientNotes" placeholder="ex: blond rece, sensibil scalp..." class="input-dark"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <div id="clientTag" class="badge-display">---</div>
+                    </div>
+                </form>
             </div>
-            <div class="card">
-                <h3>Profit Astăzi</h3>
-                <p id="todayProfit">0 RON</p>
+
+            <!-- Gallery Tab -->
+            <div class="modal-tab-content" data-tab-content="gallery">
+                <div class="gallery-section">
+                    <div class="upload-zone" id="uploadZone">
+                        <input type="file" id="clientPhotoInput" accept="image/*" multiple style="display: none;">
+                        <div class="upload-prompt">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <path d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4ZM24 40c-8.82 0-16-7.18-16-16s7.18-16 16-16 16 7.18 16 16-7.18 16-16 16Z" fill="currentColor"/>
+                                <path d="M28 20h-4v-4h-4v4h-4v4h4v4h4v-4h4v-4Z" fill="currentColor"/>
+                            </svg>
+                            <p>Trage poze aici sau click</p>
+                        </div>
+                    </div>
+                    <div id="photoGallery" class="photo-gallery">
+                        <!-- Photos will be inserted here -->
+                    </div>
+                </div>
             </div>
-            <div class="card">
-                <h3>Clienți Serviți Astăzi</h3>
-                <p id="todayClients">0</p>
+
+            <!-- Appointments Tab -->
+            <div class="modal-tab-content" data-tab-content="appointments">
+                <div class="client-appointments">
+                    <div class="appt-actions">
+                        <button class="btn btn-secondary btn-sm" id="btnQuickAppointment">+ Nouă Programare</button>
+                    </div>
+                    <div id="clientAppointmentsList" class="appointments-list">
+                        <p class="empty-state">Nu sunt programări</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Tab -->
+            <div class="modal-tab-content" data-tab-content="stats">
+                <div class="client-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Vizite</div>
+                        <div class="stat-value" id="statVisits">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Cheltuit</div>
+                        <div class="stat-value" id="statTotalSpent">0 RON</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Ultima Vizită</div>
+                        <div class="stat-value" id="statLastVisit">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Status</div>
+                        <div class="stat-value" id="statStatus">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btnClientCancel">Anulare</button>
+                <button class="btn btn-primary" id="btnClientSave">Salvare</button>
+                <button class="btn btn-danger" id="btnClientDelete" style="display: none;">Ștergere</button>
             </div>
         </div>
-        <div class="recent-activity">
-            <h3>Activitate Recentă</h3>
-            <ul id="recentList">
-            </ul>
+    </div>
+
+    <!-- Modal Appointment -->
+    <div id="appointmentModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2>Programare</h2>
+            <form id="appointmentForm">
+                <div class="form-group">
+                    <label>Clientă *</label>
+                    <div class="select-group">
+                        <select id="appointmentClient" required class="input-dark">
+                            <option value="">Selectează clientă</option>
+                        </select>
+                        <button type="button" class="btn btn-link" id="btnNewClientFromAppt">+ Nouă</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Serviciu *</label>
+                    <select id="appointmentService" required class="input-dark">
+                        <option value="" disabled>Selectează serviciu</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data *</label>
+                        <input type="date" id="appointmentDate" required class="input-dark">
+                    </div>
+                    <div class="form-group">
+                        <label>Oră *</label>
+                        <input type="time" id="appointmentTime" required class="input-dark">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Durată (minute)</label>
+                    <input type="number" id="appointmentDuration" min="15" step="15" class="input-dark">
+                </div>
+                <div class="form-group">
+                    <label>Notițe</label>
+                    <textarea id="appointmentNotes" placeholder="Notes..." class="input-dark"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="appointmentStatus" class="input-dark">
+                        <option value="scheduled">Programată</option>
+                        <option value="completed">Finalizată</option>
+                        <option value="cancelled">Anulată</option>
+                    </select>
+                </div>
+                <div id="paymentSection" style="display: none;" class="payment-section">
+                    <hr>
+                    <h3>Încasare</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Sumă (RON) *</label>
+                            <input type="number" id="paymentAmount" min="0" step="0.01" class="input-dark">
+                        </div>
+                        <div class="form-group">
+                            <label>Metoda Plată</label>
+                            <select id="paymentMethod" class="input-dark">
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="transfer">Transfer</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btnAppointmentCancel">Anulare</button>
+                <button class="btn btn-primary" id="btnAppointmentSave">Salvare</button>
+                <button class="btn btn-danger" id="btnAppointmentDelete" style="display: none;">Ștergere</button>
+            </div>
         </div>
-    </main>
-    <footer>
-        <p>&copy; 2025 Salon Elena. Toate drepturile rezervate.</p>
-    </footer>
-    <script src="script.js"></script>
+    </div>
+
+    <!-- Modal Service -->
+    <div id="serviceModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2>Serviciu</h2>
+            <form id="serviceForm">
+                <div class="form-group">
+                    <label>Nume *</label>
+                    <input type="text" id="serviceName" required placeholder="ex: Tuns Bob" class="input-dark">
+                </div>
+                <div class="form-group">
+                    <label>Categorie</label>
+                    <select id="serviceCategory" class="input-dark">
+                        <option value="tuns">Tuns</option>
+                        <option value="coafat">Coafat</option>
+                        <option value="vopsit">Vopsit</option>
+                        <option value="tratament">Tratament</option>
+                        <option value="alt">Altul</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Preț (RON) *</label>
+                        <input type="number" id="servicePrice" required min="0" step="0.01" class="input-dark">
+                    </div>
+                    <div class="form-group">
+                        <label>Durată (minute)</label>
+                        <input type="number" id="serviceDuration" value="60" min="15" step="15" class="input-dark">
+                    </div>
+                </div>
+            </form>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btnServiceCancel">Anulare</button>
+                <button class="btn btn-primary" id="btnServiceSave">Salvare</button>
+                <button class="btn btn-danger" id="btnServiceDelete" style="display: none;">Ștergere</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Expense -->
+    <div id="expenseModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2>Cheltuiala</h2>
+            <form id="expenseForm">
+                <div class="form-group">
+                    <label>Descriere *</label>
+                    <input type="text" id="modal-expenseDescription" required placeholder="ex: Materiale..." class="input-dark">
+                </div>
+                <div class="form-group">
+                    <label>Suma (RON) *</label>
+                    <input type="text" id="modal-expenseAmount" required placeholder="0.00" class="input-dark">
+                </div>
+                <div class="form-group">
+                    <label>Categorie *</label>
+                    <select id="modal-expenseCategory" required class="input-dark">
+                        <option value="">-- Selecteaza --</option>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Metoda Plata</label>
+                    <select id="modal-expenseMethod" class="input-dark">
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="transfer">Transfer</option>
+                    </select>
+                </div>
+            </form>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="btnExpenseCancel">Anulare</button>
+                <button type="button" class="btn btn-primary" id="btnExpenseSave">Salvare</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Recurring Expenses -->
+    <div id="recurringExpensesModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2>Cheltuieli Recurente Lunare</h2>
+            
+            <!-- List of existing recurring expenses -->
+            <div class="recurring-list" id="recurringExpensesList">
+                <p class="empty-state">Nu sunt cheltuieli recurente setate</p>
+            </div>
+
+            <!-- Add new recurring expense form -->
+            <div class="add-recurring-form">
+                <h3>Adaugă Cheltuiala Lunară</h3>
+                <form id="recurringExpenseForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nume Cheltuiala *</label>
+                            <input type="text" id="recExpenseName" required placeholder="ex: Chirie, Produse..." class="input-dark">
+                        </div>
+                        <div class="form-group">
+                            <label>Sumă (RON) *</label>
+                            <input type="number" id="recExpenseAmount" required min="0" step="0.01" class="input-dark">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Categorie *</label>
+                            <select id="recExpenseCategory" required class="input-dark">
+                                <option value="">-- Selectează --</option>
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Metoda Plată</label>
+                            <select id="recExpenseMethod" class="input-dark">
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="transfer">Transfer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ziua din Lună (1-31) *</label>
+                            <input type="number" id="recExpenseDay" required min="1" max="31" value="1" class="input-dark">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvează Cheltuiala Lunară</button>
+                        <button type="reset" class="btn btn-secondary">Resetează</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-actions" style="border-top: 1px solid #333; margin-top: 30px; padding-top: 20px;">
+                <button class="btn btn-secondary" id="btnRecurringExpensesClose">Închide</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="js/logger.js"></script>
+    <script src="js/cache.js"></script>
+    <script src="js/dom.js"></script>
+    <script src="js/eventmanager.js"></script>
+    <script src="js/perf.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/services.js"></script>
+    <script src="js/clients.js"></script>
+    <script src="js/appointments.js"></script>
+    <script src="js/transactions.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/accounting.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
