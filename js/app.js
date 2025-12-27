@@ -2018,27 +2018,23 @@ const App = {
             item.className = `accounting-tx-item tx-${tx.type}`;
             
             const typeLabel = tx.type === 'income' ? 'Venit' : 'Cheltuiala';
-            const typeColor = tx.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)';
             const sign = tx.type === 'income' ? '+' : '-';
 
             let description = tx.note;
             if (tx.serviceName) description += ` (${tx.serviceName})`;
 
             item.innerHTML = `
-                <div class="acc-tx-header">
-                    <div class="acc-tx-date">${tx.dateTime.substring(0, 10)}</div>
-                    <div class="acc-tx-time">${tx.dateTime.substring(11, 16)}</div>
-                    <div class="acc-tx-desc">
-                        <div class="acc-tx-label">${description || 'Fără descriere'}</div>
-                        <div class="acc-tx-meta">${tx.category || 'General'} • ${tx.paymentMethod}</div>
-                    </div>
+                <div class="acc-tx-date">${tx.dateTime.substring(0, 10)}</div>
+                <div class="acc-tx-time">${tx.dateTime.substring(11, 16)}</div>
+                <div class="acc-tx-desc">
+                    <div class="acc-tx-label">${description || 'Fără descriere'}</div>
+                    <div class="acc-tx-meta">${tx.category || 'General'}</div>
                 </div>
-                <div class="acc-tx-details">
-                    <span class="acc-tx-type" style="color: ${typeColor};">${typeLabel}</span>
-                    <span class="acc-tx-status">${tx.status}</span>
-                    <span class="acc-tx-amount" style="color: ${typeColor};">${sign}${UI.formatCurrency(tx.amount)}</span>
-                    <button class="btn-icon-delete" onclick="App.deleteTransaction('${tx.id}', event)" title="Șterge">×</button>
-                </div>
+                <span class="acc-tx-type">${typeLabel}</span>
+                <span class="acc-tx-status">${tx.status || 'confirmed'}</span>
+                <span class="acc-tx-method">${tx.paymentMethod || 'N/A'}</span>
+                <span class="acc-tx-amount">${sign}${UI.formatCurrency(tx.amount)}</span>
+                <button class="btn-icon-delete" onclick="App.deleteTransaction('${tx.id}', event)" title="Șterge" data-tooltip="Șterge tranzacție">×</button>
             `;
             list.appendChild(item);
         });
@@ -2128,11 +2124,61 @@ const App = {
             event.stopPropagation();
         }
 
-        if (!confirm('Ștergi tranzacția?')) return;
+        // Store transaction ID for confirmation
+        this._pendingDeleteTxId = txId;
 
-        Accounting.deleteTransaction(txId);
-        UI.showToast('Tranzacție ștearsă', 'success');
-        this.renderAccounting();
+        // Get transaction to show in confirmation
+        const transactions = Storage.load(Storage.KEYS.TRANSACTIONS, []);
+        const tx = transactions.find(t => t.id === txId);
+
+        if (!tx) return;
+
+        // Show delete confirmation modal
+        const modal = document.getElementById('deleteConfirmModal');
+        const message = document.getElementById('deleteConfirmMessage');
+        const cancelBtn = document.getElementById('deleteCancelBtn');
+        const confirmBtn = document.getElementById('deleteConfirmBtn');
+
+        message.innerHTML = `Ești sigur că vrei să ștergi tranzacția?<br><strong>${tx.note || 'Fără descriere'}</strong> - ${UI.formatCurrency(tx.amount)} RON`;
+
+        // Remove old event listeners
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+        // Close modal on cancel
+        newCancelBtn.addEventListener('click', () => {
+            UI.closeModal('deleteConfirmModal');
+            this._pendingDeleteTxId = null;
+        });
+
+        // Perform delete on confirm
+        newConfirmBtn.addEventListener('click', () => {
+            Accounting.deleteTransaction(this._pendingDeleteTxId);
+            UI.closeModal('deleteConfirmModal');
+            this._pendingDeleteTxId = null;
+
+            // Emit event bus to sync all sections
+            window.dispatchEvent(new CustomEvent('data:changed', {
+                detail: {
+                    reason: 'transaction:deleted',
+                    transactionId: txId,
+                    keysChanged: ['transactions', 'clients', 'appointments']
+                }
+            }));
+
+            UI.showToast('Tranzacție ștearsă', 'success');
+            Logger.log('[TRANSACTION DELETE] Event emitted for global sync');
+        });
+
+        // Also close on close button
+        const closeBtn = modal.querySelector('.modal-close');
+        closeBtn.addEventListener('click', () => {
+            this._pendingDeleteTxId = null;
+        });
+
+        UI.showModal('deleteConfirmModal');
     },
 
 
@@ -2567,6 +2613,13 @@ const App = {
      */
     recalcAndRenderAll() {
         console.log('[RECALC] Starting global recalculation and re-render...');
+
+        // Reload DataStore to get latest data from Storage
+        if (window.DataStore) {
+            DataStore.reload();
+        } else {
+            this.loadData();
+        }
 
         // Get current tab to avoid re-rendering unnecessary sections
         const currentTab = AppState.currentTab || 'dashboard';

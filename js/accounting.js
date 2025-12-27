@@ -108,7 +108,7 @@ const Accounting = {
     },
 
     /**
-     * Delete transaction (mark as void for audit trail)
+     * Delete transaction (mark as void and sync all data)
      */
     deleteTransaction(txId) {
         const transactions = Storage.load(Storage.KEYS.TRANSACTIONS, []);
@@ -116,12 +116,33 @@ const Accounting = {
 
         if (!tx) return false;
 
-        // Mark as void instead of deleting
+        // Mark as void instead of deleting (audit trail)
         tx.status = 'void';
         tx.updatedAt = new Date().toISOString();
 
         Storage.save(Storage.KEYS.TRANSACTIONS, transactions);
         Logger.log(`[ACCOUNTING] Transaction voided: ${txId}`);
+
+        // If this was an income transaction for an appointment, we need to update client stats
+        if (tx.type === 'income' && tx.clientId) {
+            const clients = Storage.load(Storage.KEYS.CLIENTS, []);
+            const client = clients.find(c => c.id === tx.clientId);
+
+            if (client) {
+                // Recalculate client stats from source data
+                const clientTransactions = transactions.filter(t => 
+                    t.clientId === tx.clientId && t.status !== 'void' && t.type === 'income'
+                );
+                client.totalSpent = clientTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+                // Also update tag based on new stats
+                client.tag = Clients.calculateTag(client.visits || 0, client.totalSpent);
+                client.updatedAt = new Date().toISOString();
+
+                Storage.save(Storage.KEYS.CLIENTS, clients);
+                Logger.log(`[CLIENT SYNC] Updated stats for ${tx.clientId} after transaction void`);
+            }
+        }
 
         return true;
     },
@@ -147,7 +168,9 @@ const Accounting = {
      */
     getConfirmedTransactions() {
         const transactions = Storage.load(Storage.KEYS.TRANSACTIONS, []);
-        return transactions.filter(t => t.status === 'confirmed');
+        // Include transactions that are 'confirmed' OR don't have a status (legacy data)
+        // Exclude transactions with status 'void'
+        return transactions.filter(t => t.status !== 'void');
     },
 
     /**

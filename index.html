@@ -854,6 +854,21 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <button class="modal-close">&times;</button>
+            <h2 style="color: #ff6b6b;">Confirmă ștergerea</h2>
+            <p id="deleteConfirmMessage" style="color: var(--color-text-secondary); margin: var(--spacing-lg) 0;">
+                Ești sigur că vrei să ștergi acest element? Acțiunea nu poate fi anulată.
+            </p>
+            <div style="display: flex; gap: var(--spacing-md); margin-top: var(--spacing-lg);">
+                <button id="deleteCancelBtn" class="btn-secondary" style="flex: 1;">Anulează</button>
+                <button id="deleteConfirmBtn" class="btn-danger" style="flex: 1;">Șterge</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/logger.js"></script>
     <script src="js/cache.js"></script>
@@ -861,6 +876,7 @@
     <script src="js/eventmanager.js"></script>
     <script src="js/perf.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/datastore.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/services.js"></script>
     <script src="js/clients.js"></script>

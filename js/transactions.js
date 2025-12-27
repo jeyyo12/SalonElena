@@ -109,6 +109,9 @@ const Transactions = {
      */
     getByDate(dateStr) {
         return this.data.filter(t => {
+            // Skip void transactions
+            if (t.status === 'void') return false;
+            
             // Use dateTime if available (new format), otherwise use date
             const dateField = t.dateTime || t.date;
             const txDate = dateField.split('T')[0];
