@@ -2998,7 +2998,262 @@ select:focus {
     text-align: right;
 }
 
-/* Empty State */
+/* ============================================
+   ACCOUNTING - Financial Management
+   ============================================ */
+
+/* Accounting tabs */
+.accounting-tabs {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+    border-bottom: 2px solid rgba(157, 78, 221, 0.15);
+}
+
+.acc-tab-btn {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all var(--transition-base);
+}
+
+.acc-tab-btn.active {
+    color: var(--color-accent-violet);
+    border-bottom-color: var(--color-accent-violet);
+}
+
+.acc-tab-btn:hover {
+    color: var(--color-text-primary);
+}
+
+.acc-tab-content {
+    display: none;
+}
+
+.acc-tab-content.active {
+    display: block;
+}
+
+/* Filters card */
+.accounting-filters-card {
+    background: rgba(157, 78, 221, 0.05);
+    border: 1px solid rgba(157, 78, 221, 0.15);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.filter-group label {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.date-range {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.date-range span {
+    color: var(--color-text-secondary);
+}
+
+/* Reports grid */
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+}
+
+.report-card {
+    background: rgba(157, 78, 221, 0.05);
+    border: 1px solid rgba(157, 78, 221, 0.15);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+}
+
+.report-card h4 {
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-h3);
+    color: var(--color-text-primary);
+}
+
+/* Forms grid */
+.forms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--spacing-xl);
+}
+
+.form-card {
+    background: rgba(157, 78, 221, 0.05);
+    border: 1px solid rgba(157, 78, 221, 0.15);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+}
+
+.form-card h4 {
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-h3);
+    color: var(--color-text-primary);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.input-form {
+    padding: var(--spacing-md);
+    background: var(--color-bg-elevated);
+    border: 1px solid rgba(157, 78, 221, 0.2);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-body);
+}
+
+.input-form:focus {
+    outline: none;
+    border-color: var(--color-accent-violet);
+    box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.1);
+}
+
+.btn-block {
+    width: 100%;
+    margin-top: var(--spacing-md);
+}
+
+/* Transaction row */
+.tx-row {
+    display: grid;
+    grid-template-columns: 100px 60px 1fr 120px 100px 120px 100px 100px;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid rgba(157, 78, 221, 0.1);
+    font-size: var(--font-size-sm);
+}
+
+.tx-date { color: var(--color-text-secondary); font-weight: 600; }
+.tx-time { color: var(--color-text-secondary); }
+.tx-desc { color: var(--color-text-primary); font-weight: 500; }
+.tx-category { background: rgba(157, 78, 221, 0.1); padding: 4px 8px; border-radius: 4px; }
+.tx-method { text-transform: capitalize; }
+.tx-amount { font-weight: 700; font-family: 'Monaco', monospace; }
+.tx-amount.tx-income { color: #2EE59D; }
+.tx-amount.tx-expense { color: #FF5C7A; }
+.tx-type { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 3px; }
+.tx-actions button { padding: 4px 8px; font-size: 12px; }
+
+/* Report table */
+.report-table {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(157, 78, 221, 0.15);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.report-header {
+    display: grid;
+    grid-template-columns: 100px 1fr 1fr 1fr;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(157, 78, 221, 0.1);
+    font-weight: 600;
+    border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+}
+
+.report-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 1fr 1fr;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-bottom: 1px solid rgba(157, 78, 221, 0.1);
+    align-items: center;
+}
+
+.report-row:hover {
+    background: rgba(157, 78, 221, 0.05);
+}
+
+.report-row:last-child {
+    border-bottom: none;
+}
+
+.amount-income { color: #2EE59D; font-weight: 600; }
+.amount-expense { color: #FF5C7A; font-weight: 600; }
+.amount-profit { font-weight: 700; }
+.profit-positive { color: #2EE59D; }
+.profit-negative { color: #FF5C7A; }
+
+/* Report items (categories, services) */
+.report-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: rgba(157, 78, 221, 0.05);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid #9D4EDD;
+    margin-bottom: var(--spacing-sm);
+}
+
+.item-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: var(--spacing-md);
+}
+
+.item-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.item-amount {
+    font-weight: 700;
+    font-family: 'Monaco', monospace;
+    color: #FF5C7A;
+}
+
+.item-amount.income {
+    color: #2EE59D;
+}
+
+/* KPI profit/loss highlighting */
+.kpi-profit { color: #2EE59D; }
+.kpi-loss { color: #FF5C7A; }
+
+/* Empty state */
 .empty-state {
     color: #6B6B7A;
     text-align: center;
@@ -3007,6 +3262,35 @@ select:focus {
 }
 
 /* Responsive */
+@media (max-width: 1400px) {
+    .tx-row {
+        grid-template-columns: 100px 1fr 100px 120px 100px;
+    }
+    .tx-time, .tx-category { display: none; }
+}
+
+@media (max-width: 1024px) {
+    .tx-row {
+        grid-template-columns: 100px 1fr 100px;
+    }
+    .tx-method, .tx-type { display: none; }
+    
+    .forms-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .reports-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .tx-row {
+        grid-template-columns: 100px 1fr;
+    }
+    .tx-amount, .tx-actions { display: none; }
+}
+
 @media (max-width: 1024px) {
     .filters-grid {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

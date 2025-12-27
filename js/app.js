@@ -1269,11 +1269,10 @@ const App = {
      * ==================== ACCOUNTING TAB ====================
      */
     setupAccounting() {
-        // AUTO-SYNC: Full sync when entering accounting tab or on init
-        Logger.log('[APP] Running full accounting sync...');
+        // Full sync on setup
         Accounting.fullSync();
 
-        // Date filters - auto-update
+        // Date filters
         const dateStartInput = document.getElementById('accDateStart');
         const dateEndInput = document.getElementById('accDateEnd');
         
@@ -1463,44 +1462,140 @@ const App = {
     renderAccounting() {
         if (AppState.currentTab !== 'accounting') return;
 
-        // Get filtered transactions
+        // Get summary and data
         const filters = AppState.accountingFilters;
-        const txs = Accounting.getFilteredTransactions(filters);
         const summary = Accounting.getRangeSummary(filters);
+        const txs = summary.transactions;
+        const dayGroups = Accounting.groupByDay(txs);
+        const topExpenses = Accounting.getTopExpenseCategories(txs, 5);
+        const topServices = Accounting.getTopServices(txs, 5);
 
-        // Populate category selects
-        this.populateExpenseCategorySelect();
+        // Update KPI cards
+        DOM.setInner('accIncomeTotal', UI.formatCurrency(summary.incomeTotal));
+        DOM.setInner('accExpenseTotal', UI.formatCurrency(summary.expenseTotal));
+        const profitEl = DOM.get('accProfitTotal');
+        if (profitEl) {
+            profitEl.textContent = UI.formatCurrency(summary.profit);
+            profitEl.className = summary.profit >= 0 ? 'kpi-value kpi-profit' : 'kpi-value kpi-loss';
+        }
+        DOM.setInner('accCashTotal', UI.formatCurrency(summary.cashTotal));
+        DOM.setInner('accCardTotal', UI.formatCurrency(summary.cardTotal));
+        DOM.setInner('accTransferTotal', UI.formatCurrency(summary.transferTotal));
+        DOM.setInner('accTxCount', summary.txCount);
+        DOM.setInner('accClientsCount', summary.clientsServed);
 
-        // Update KPI cards - using correct HTML IDs
-        const incomeCard = document.getElementById('accIncomeTotal');
-        if (incomeCard) incomeCard.textContent = UI.formatCurrency(summary.incomeTotal);
+        // Render main sections
+        this.renderAccountingTransactions(txs);
+        this.renderAccountingDayBreakdown(dayGroups);
+        this.renderAccountingExpenseCategories(topExpenses);
+        this.renderAccountingServices(topServices);
+    },
 
-        const expenseCard = document.getElementById('accExpenseTotal');
-        if (expenseCard) expenseCard.textContent = UI.formatCurrency(summary.expenseTotal);
+    /**
+     * Render list of transactions
+     */
+    renderAccountingTransactions(txs) {
+        const container = DOM.get('accountingTransactionsList');
+        if (!container) return;
 
-        const profitCard = document.getElementById('accProfitTotal');
-        if (profitCard) {
-            profitCard.textContent = UI.formatCurrency(summary.profit);
-            profitCard.className = summary.profit >= 0 ? 'kpi-value' : 'kpi-value danger';
+        if (txs.length === 0) {
+            container.innerHTML = '<p class="empty-state">Nicio tranzacție</p>';
+            return;
         }
 
-        const cashCard = document.getElementById('accCashTotal');
-        if (cashCard) cashCard.textContent = UI.formatCurrency(summary.cashTotal);
+        container.innerHTML = txs.map(tx => {
+            const client = tx.clientId && typeof Clients !== 'undefined' ? Clients.getById(tx.clientId)?.name : '';
+            const category = tx.categoryId ? Accounting.getCategory(tx.categoryId)?.name : '-';
+            const desc = `${client} ${tx.serviceName || tx.note}`.trim() || '-';
+            const sign = tx.type === 'income' ? '+' : '-';
+            const typeLabel = tx.type === 'income' ? 'VENIT' : 'CHELTUIALA';
+            const typeClass = tx.type === 'income' ? 'tx-income' : 'tx-expense';
 
-        const cardCard = document.getElementById('accCardTotal');
-        if (cardCard) cardCard.textContent = UI.formatCurrency(summary.cardTotal);
+            return `
+                <div class="tx-row">
+                    <div class="tx-date">${tx.date}</div>
+                    <div class="tx-time">${tx.time}</div>
+                    <div class="tx-desc">${desc}</div>
+                    <div class="tx-category">${category}</div>
+                    <div class="tx-method">${tx.paymentMethod}</div>
+                    <div class="tx-amount ${typeClass}">${sign}${UI.formatCurrency(tx.amount)}</div>
+                    <div class="tx-type">${typeLabel}</div>
+                    <div class="tx-actions">
+                        <button class="btn-sm btn-danger" onclick="App.deleteTransaction('${tx.id}')">Șterge</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
 
-        const transferCard = document.getElementById('accTransferTotal');
-        if (transferCard) transferCard.textContent = UI.formatCurrency(summary.transferTotal);
+    /**
+     * Render day breakdown report
+     */
+    renderAccountingDayBreakdown(dayGroups) {
+        const container = DOM.get('accountingDayBreakdown');
+        if (!container || dayGroups.length === 0) return;
 
-        // Render transaction list
-        this.renderAccountingTransactionList(txs);
+        let html = '<div class="report-table"><div class="report-header">';
+        html += '<div>Data</div><div>Venituri</div><div>Cheltuieli</div><div>Profit</div>';
+        html += '</div>';
 
-        // Render categories
-        this.renderAccountingCategories();
+        dayGroups.forEach(day => {
+            const profitClass = day.profit >= 0 ? 'profit-positive' : 'profit-negative';
+            html += `<div class="report-row">
+                <div>${day.date}</div>
+                <div class="amount-income">+${UI.formatCurrency(day.income)}</div>
+                <div class="amount-expense">-${UI.formatCurrency(day.expenses)}</div>
+                <div class="amount-profit ${profitClass}">${day.profit >= 0 ? '+' : ''}${UI.formatCurrency(day.profit)}</div>
+            </div>`;
+        });
 
-        // Render reports
-        this.renderAccountingReports(txs);
+        html += '</div>';
+        container.innerHTML = html;
+    },
+
+    /**
+     * Render top expense categories
+     */
+    renderAccountingExpenseCategories(topExpenses) {
+        const container = DOM.get('accountingTopExpenses');
+        if (!container) return;
+
+        if (topExpenses.length === 0) {
+            container.innerHTML = '<p class="empty-state">Nu există cheltuieli</p>';
+            return;
+        }
+
+        container.innerHTML = topExpenses.map(item => {
+            const cat = Accounting.getCategory(item.categoryId);
+            const color = cat?.color || '#9D4EDD';
+            return `
+                <div class="report-item">
+                    <div class="item-color" style="background-color: ${color};"></div>
+                    <div class="item-name">${item.categoryName}</div>
+                    <div class="item-amount">-${UI.formatCurrency(item.amount)}</div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    /**
+     * Render top services
+     */
+    renderAccountingServices(topServices) {
+        const container = DOM.get('accountingTopServices');
+        if (!container) return;
+
+        if (topServices.length === 0) {
+            container.innerHTML = '<p class="empty-state">Nu există venituri</p>';
+            return;
+        }
+
+        container.innerHTML = topServices.map(item => `
+            <div class="report-item">
+                <div class="item-name">${item.serviceName}</div>
+                <div class="item-amount income">+${UI.formatCurrency(item.amount)}</div>
+            </div>
+        `).join('');
     },
 
     populateExpenseCategorySelect() {
@@ -1815,85 +1910,84 @@ const App = {
         return methods[method] || method;
     },
 
+    /**
+     * ==================== ACCOUNTING SAVE FUNCTIONS ====================
+     */
+
     saveIncome() {
         const date = document.getElementById('incomeDate')?.value;
         const time = document.getElementById('incomeTime')?.value || '12:00';
-        const amount = document.getElementById('incomeAmount')?.value;
+        const amount = parseFloat(document.getElementById('incomeAmount')?.value || 0);
         const clientId = document.getElementById('incomeClient')?.value;
         const serviceName = document.getElementById('incomeService')?.value;
         const method = document.getElementById('incomeMethod')?.value || 'cash';
         const note = document.getElementById('incomeNote')?.value || '';
 
-        if (!date || !amount || !serviceName) {
+        if (!date || amount <= 0 || !serviceName) {
             UI.showToast('Completează data, sumă și serviciu', 'warning');
             return;
         }
 
-        const defaultIncomeCategory = Accounting.loadCategories().find(c => c.type === 'income');
-        
-        const tx = {
-            id: 'tx_' + Date.now(),
+        const result = Accounting.addTransaction({
             type: 'income',
-            date: date,
-            time: time,
-            amount: parseFloat(amount),
-            currency: 'RON',
-            categoryId: defaultIncomeCategory ? defaultIncomeCategory.id : 'income_default',
+            date,
+            time,
+            amount,
             clientId: clientId || null,
-            serviceName: serviceName,
+            serviceName,
             paymentMethod: method,
-            note: note,
-            status: 'confirmed',
-            createdAt: new Date().toISOString()
-        };
+            note,
+            status: 'confirmed'
+        });
 
-        Accounting.addTransaction(tx);
-        UI.showToast('Venit adăugat', 'success');
-        
-        // Reset form
-        document.getElementById('accIncomeForm').reset();
+        if (result.error) {
+            UI.showToast(result.error, 'warning');
+            return;
+        }
+
+        UI.showToast(`Venit +${UI.formatCurrency(amount)} adăugat`, 'success');
+        document.getElementById('accIncomeForm')?.reset();
         this.renderAccounting();
     },
 
     saveExpenseAccounting() {
         const date = document.getElementById('expenseDate')?.value;
         const time = document.getElementById('expenseTime')?.value || '12:00';
-        const amount = document.getElementById('expenseAmount')?.value;
+        const amount = parseFloat(document.getElementById('expenseAmount')?.value || 0);
         const categoryId = document.getElementById('expenseCategory')?.value;
         const method = document.getElementById('expenseMethod')?.value || 'cash';
         const note = document.getElementById('expenseNote')?.value || '';
 
-        if (!date || !amount || !categoryId) {
+        if (!date || amount <= 0 || !categoryId) {
             UI.showToast('Completează data, sumă și categorie', 'warning');
             return;
         }
 
-        const tx = {
-            id: 'tx_' + Date.now(),
+        const result = Accounting.addTransaction({
             type: 'expense',
-            date: date,
-            time: time,
-            amount: parseFloat(amount),
-            currency: 'RON',
-            categoryId: categoryId,
+            date,
+            time,
+            amount,
+            categoryId,
             paymentMethod: method,
-            note: note,
-            status: 'confirmed',
-            createdAt: new Date().toISOString()
-        };
+            note,
+            status: 'confirmed'
+        });
 
-        Accounting.addTransaction(tx);
-        UI.showToast('Cheltuiala adăugată', 'success');
-        
-        // Reset form
-        document.getElementById('accExpenseForm').reset();
+        if (result.error) {
+            UI.showToast(result.error, 'warning');
+            return;
+        }
+
+        UI.showToast(`Cheltuiala -${UI.formatCurrency(amount)} adăugată`, 'success');
+        document.getElementById('accExpenseForm')?.reset();
         this.renderAccounting();
     },
 
     saveCategory() {
         const type = document.getElementById('newCategoryType')?.value;
-        const name = document.getElementById('newCategoryName')?.value;
-        const color = document.getElementById('newCategoryColor')?.value;
+        const name = document.getElementById('newCategoryName')?.value?.trim();
+        const color = document.getElementById('newCategoryColor')?.value || '#9D4EDD';
 
         if (!name || !type) {
             UI.showToast('Completează tip și nume', 'warning');
@@ -1901,18 +1995,18 @@ const App = {
         }
 
         Accounting.addCategory(name, type, color);
-        UI.showToast('Categorie adăugată', 'success');
+        UI.showToast(`Categorie "${name}" adăugată`, 'success');
+        document.getElementById('addCategoryForm').style.display = 'none';
         document.getElementById('newCategoryName').value = '';
         this.renderAccounting();
     },
 
-    editTransaction(txId) {
-        UI.showToast('Edit nu e disponibil încă', 'info');
-    },
-
     deleteTransaction(txId) {
-        if (confirm('Ștergi tranzacție?')) {
-            Accounting.deleteTransaction(txId);
+        if (!confirm('Ștergi tranzacție?')) return;
+        Accounting.deleteTransaction(txId);
+        UI.showToast('Tranzacție ștearsă', 'success');
+        this.renderAccounting();
+    },
             UI.showToast('Tranzacție ștearsă', 'success');
             this.renderAccounting();
         }
