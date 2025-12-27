@@ -1275,33 +1275,6 @@ const App = {
         this.openAppointmentModal(apptId, null);
     },
 
-        if (appointment.status === 'completed') {
-            UI.showToast('Programare deja finalizată', 'warning');
-            return;
-        }
-
-        // Update appointment status
-        Appointments.update(apptId, appointment.clientId, appointment.serviceId, appointment.date, appointment.time, 'completed');
-        
-        // Update client stats
-        const client = Clients.getById(appointment.clientId);
-        if (client) {
-            client.visits = (client.visits || 0) + 1;
-            client.lastVisitAt = new Date().toISOString();
-            
-            // Recalculate tag based on visits and spending
-            const service = Services.getById(appointment.serviceId);
-            if (service) {
-                client.totalSpent = (client.totalSpent || 0) + service.price;
-            }
-            client.tag = Clients.calculateTag(client.visits, client.totalSpent);
-            Clients.save();
-        }
-
-        UI.showToast('Programare finalizată', 'success');
-        this.renderDashboard();
-    },
-
     /**
      * ==================== MODALS ====================
      */
