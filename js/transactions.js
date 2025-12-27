@@ -20,25 +20,57 @@ const Transactions = {
     },
 
     /**
-     * Create income transaction from appointment payment
+     * Create or update income transaction from appointment payment
+     * If transaction for appointmentId already exists, update it instead of creating duplicate
+     */
+    createOrUpdateIncome(clientId, appointmentId, serviceId, amount, paymentMethod = 'cash', serviceName = '') {
+        const now = new Date().toISOString();
+        amount = parseFloat(amount);
+
+        // Check if transaction already exists for this appointment
+        const existingTx = this.data.find(t => t.appointmentId === appointmentId && t.type === 'income');
+
+        if (existingTx) {
+            // Update existing transaction
+            existingTx.amount = amount;
+            existingTx.paymentMethod = paymentMethod;
+            existingTx.status = 'confirmed';
+            existingTx.updatedAt = now;
+            existingTx.dateTime = now;
+            console.log('[TRANSACTION] Updated existing income:', existingTx.id);
+        } else {
+            // Create new transaction
+            const transaction = {
+                id: `tx-${Date.now()}`,
+                type: 'income',
+                status: 'confirmed',
+                dateTime: now,
+                amount: amount,
+                currency: 'RON',
+                paymentMethod: paymentMethod, // cash, card, transfer
+                clientId,
+                appointmentId,
+                serviceId,
+                serviceName: serviceName || 'Serviciu',
+                note: '',
+                source: 'appointment',
+                createdAt: now,
+                updatedAt: now
+            };
+
+            this.data.push(transaction);
+            console.log('[TRANSACTION] Created new income:', transaction.id);
+        }
+
+        this.save();
+        return existingTx || this.data[this.data.length - 1];
+    },
+
+    /**
+     * Create income transaction from appointment payment (legacy, uses createOrUpdateIncome)
      */
     createIncome(clientId, appointmentId, serviceId, amount, method = 'cash', description = '') {
-        const transaction = {
-            id: `tx-${Date.now()}`,
-            type: 'income',
-            clientId,
-            appointmentId,
-            serviceId,
-            amount: parseFloat(amount),
-            method, // cash, card, transfer
-            description: description || 'Serviciu',
-            date: new Date().toISOString(),
-            createdAt: new Date().toISOString()
-        };
-
-        this.data.push(transaction);
-        this.save();
-        return transaction;
+        return this.createOrUpdateIncome(clientId, appointmentId, serviceId, amount, method, description);
     },
 
     /**
@@ -73,10 +105,13 @@ const Transactions = {
 
     /**
      * Get transactions by date (YYYY-MM-DD)
+     * Uses dateTime field if available, falls back to date
      */
     getByDate(dateStr) {
         return this.data.filter(t => {
-            const txDate = t.date.split('T')[0];
+            // Use dateTime if available (new format), otherwise use date
+            const dateField = t.dateTime || t.date;
+            const txDate = dateField.split('T')[0];
             return txDate === dateStr;
         });
     },
@@ -89,20 +124,22 @@ const Transactions = {
         const end = new Date(endDate).getTime();
 
         return this.data.filter(t => {
-            const txTime = new Date(t.date).getTime();
+            const dateField = t.dateTime || t.date;
+            const txTime = new Date(dateField).getTime();
             return txTime >= start && txTime <= end;
         });
     },
 
     /**
      * Get daily summary for specific date
+     * Only counts transactions with status="confirmed" (or legacy data without status)
      */
     getDailySummary(dateStr) {
         const dayTransactions = this.getByDate(dateStr);
         
         const income = dayTransactions
-            .filter(t => t.type === 'income')
-            .reduce((sum, t) => sum + t.amount, 0);
+            .filter(t => t.type === 'income' && (t.status === 'confirmed' || !t.status))
+            .reduce((sum, t) => sum + (t.amount || 0), 0);
 
         const expenses = dayTransactions
             .filter(t => t.type === 'expense')

@@ -53,6 +53,13 @@ const App = {
         this.loadData();
         this.setupEventListeners();
         
+        // EVENT BUS: Listen for global data changes
+        window.addEventListener('data:changed', (event) => {
+            const reason = event.detail?.reason || 'unknown';
+            console.log('[EVENT BUS] data:changed triggered by:', reason);
+            this.recalcAndRenderAll();
+        });
+        
         // Render initial content (or use hash-based routing)
         const initialHash = window.location.hash?.substring(1);
         if (initialHash && ['dashboard', 'clients', 'appointments', 'transactions', 'accounting', 'history', 'services'].includes(initialHash)) {
@@ -704,16 +711,22 @@ const App = {
                 if (action === 'checkin-appt') {
                     Appointments.markForgottenCheckIn(apptId);
                     UI.showToast('Marcat: A venit (am uitat)', 'info');
-                    this.renderAppointments();
+                    window.dispatchEvent(new CustomEvent('data:changed', {
+                        detail: { reason: 'appointment:checkin', appointmentId: apptId }
+                    }));
                 } else if (action === 'more-time-appt') {
                     Appointments.updateLateNotes(apptId, 10);
                     UI.showToast('Notă adăugată: +10 min întârziere', 'info');
-                    this.renderAppointments();
+                    window.dispatchEvent(new CustomEvent('data:changed', {
+                        detail: { reason: 'appointment:moreTime', appointmentId: apptId }
+                    }));
                 } else if (action === 'noshow-appt') {
                     if (confirm('Marchez clienta ca nu a venit?')) {
                         Appointments.markNoShow(apptId);
                         UI.showToast('Marcat: Nu a venit', 'danger');
-                        this.renderAppointments();
+                        window.dispatchEvent(new CustomEvent('data:changed', {
+                            detail: { reason: 'appointment:noshow', appointmentId: apptId }
+                        }));
                     }
                 }
             });
@@ -729,9 +742,12 @@ const App = {
         list.querySelectorAll('.btn-delete').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (confirm('Ștergi programare?')) {
-                    Appointments.delete(btn.dataset.apptId);
+                    const apptId = btn.dataset.apptId;
+                    Appointments.delete(apptId);
                     UI.showToast('Programare ștearsă', 'success');
-                    this.renderAppointments();
+                    window.dispatchEvent(new CustomEvent('data:changed', {
+                        detail: { reason: 'appointment:deleted', appointmentId: apptId }
+                    }));
                 }
             });
         });
@@ -965,9 +981,14 @@ const App = {
         list.querySelectorAll('button[data-tx-id]').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (confirm('Ștergi tranzacție?')) {
-                    Transactions.delete(btn.dataset.txId);
+                    const txId = btn.dataset.txId;
+                    Transactions.delete(txId);
                     UI.showToast('Tranzacție ștearsă', 'success');
-                    this.renderTransactions();
+                    
+                    // Emit event for global recalc
+                    window.dispatchEvent(new CustomEvent('data:changed', {
+                        detail: { reason: 'transaction:deleted', transactionId: txId }
+                    }));
                 }
             });
         });
@@ -1324,7 +1345,10 @@ const App = {
                                 appt.date, appt.time, appt.duration,
                                 appt.notes, 'cancelled');
                             UI.showToast('Programare anulată', 'warning');
-                            this.renderDashboard();
+                            
+                            window.dispatchEvent(new CustomEvent('data:changed', {
+                                detail: { reason: 'appointment:cancelled', appointmentId: apptId }
+                            }));
                         }
                     } else if (action === 'view-appt') {
                         this.openAppointmentFromDashboard(apptId);
@@ -1332,17 +1356,26 @@ const App = {
                         // Mark as forgotten check-in
                         Appointments.markForgottenCheckIn(apptId);
                         UI.showToast('Marcat: A venit (am uitat)', 'info');
-                        this.renderDashboard();
+                        
+                        window.dispatchEvent(new CustomEvent('data:changed', {
+                            detail: { reason: 'appointment:checkin', appointmentId: apptId }
+                        }));
                     } else if (action === 'more-time-appt') {
                         // Update notes with +10 min
                         Appointments.updateLateNotes(apptId, 10);
                         UI.showToast('Notă adăugată: +10 min întârziere', 'info');
-                        this.renderDashboard();
+                        
+                        window.dispatchEvent(new CustomEvent('data:changed', {
+                            detail: { reason: 'appointment:moreTime', appointmentId: apptId }
+                        }));
                     } else if (action === 'noshow-appt') {
                         if (confirm('Marchez clienta ca nu a venit?')) {
                             Appointments.markNoShow(apptId);
                             UI.showToast('Marcat: Nu a venit', 'danger');
-                            this.renderDashboard();
+                            
+                            window.dispatchEvent(new CustomEvent('data:changed', {
+                                detail: { reason: 'appointment:noshow', appointmentId: apptId }
+                            }));
                         }
                     }
                 });
@@ -1431,6 +1464,12 @@ const App = {
             return false;
         }
 
+        // Don't complete if already completed or cancelled
+        if (appointment.status === 'completed' || appointment.status === 'cancelled') {
+            UI.showToast('Programare deja finalizată sau anulată', 'warning');
+            return false;
+        }
+
         const client = Clients.getById(appointment.clientId);
         const service = Services.getById(appointment.serviceId);
 
@@ -1439,23 +1478,10 @@ const App = {
             return false;
         }
 
-        // Check if transaction already exists for this appointment
-        const existingTx = Transactions.getAll().find(t => t.appointmentId === apptId && t.type === 'income');
-        if (existingTx) {
-            UI.showToast('Programare deja finalizată - tranzacție existentă', 'warning');
-            return false;
-        }
+        const now = new Date().toISOString();
+        amount = parseFloat(amount);
 
-        console.log('[COMPLETE APPOINTMENT]', {
-            appointmentId: apptId,
-            amount: parseFloat(amount),
-            paymentMethod: paymentMethod,
-            clientId: appointment.clientId,
-            serviceName: service.name
-        });
-
-        // Mark appointment as completed
-        const completedAt = new Date().toISOString();
+        // 1. MARK APPOINTMENT AS COMPLETED
         Appointments.update(
             apptId,
             appointment.clientId,
@@ -1467,31 +1493,77 @@ const App = {
             'completed'
         );
 
-        // Create income transaction
-        Transactions.createIncome(
+        // 2. CREATE OR UPDATE TRANSACTION
+        const transaction = Transactions.createOrUpdateIncome(
             appointment.clientId,
             apptId,
             appointment.serviceId,
-            parseFloat(amount),
+            amount,
             paymentMethod,
-            `${service.name}`
+            service.name
         );
 
-        // Update client stats
-        client.visits = (client.visits || 0) + 1;
-        client.lastVisitAt = completedAt;
-        client.totalSpent = (client.totalSpent || 0) + service.price;
+        // 3. UPDATE CLIENT STATS (Single source of truth: recalc from transactions)
+        const allTransactions = Transactions.getAll();
+        const clientIncomes = allTransactions.filter(t => 
+            t.type === 'income' && 
+            t.status === 'confirmed' &&
+            t.clientId === client.id
+        );
+
+        const completedAppointments = Appointments.getByClient(client.id).filter(a => 
+            a.status === 'completed'
+        );
+
+        // Recalculate client stats from source data
+        client.visits = completedAppointments.length;
+        client.totalSpent = clientIncomes.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+        client.lastVisitAt = now;
         client.tag = Clients.calculateTag(client.visits, client.totalSpent);
         Clients.save();
 
-        // Emit events for other modules to update
-        window.dispatchEvent(new Event('appointments:changed'));
-        window.dispatchEvent(new Event('transactions:changed'));
+        // 4. DEBUG LOG
+        const todayStr = UI.getTodayInputValue();
+        const todayTransactions = Transactions.getByDate(todayStr);
+        const incomeToday = todayTransactions
+            .filter(t => t.type === 'income' && t.status === 'confirmed')
+            .reduce((sum, t) => sum + (t.amount || 0), 0);
+        const expenseToday = todayTransactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + (t.amount || 0), 0);
+        const profitToday = incomeToday - expenseToday;
+
+        console.log('[COMPLETE APPOINTMENT]', {
+            appointmentId: apptId,
+            amount: amount,
+            paymentMethod: paymentMethod,
+            clientId: appointment.clientId,
+            serviceName: service.name,
+            transactionId: transaction.id
+        });
+
+        console.log('[DAILY TOTALS]', {
+            incomeToday: UI.formatCurrency(incomeToday),
+            expenseToday: UI.formatCurrency(expenseToday),
+            profitToday: UI.formatCurrency(profitToday),
+            clientStats: {
+                clientName: client.name,
+                totalVisits: client.visits,
+                totalSpent: UI.formatCurrency(client.totalSpent),
+                clientTag: client.tag
+            }
+        });
 
         UI.showToast(`Programare finalizată - ${UI.formatCurrency(amount)} încasat`, 'success');
-        
-        // Re-render dashboard
-        this.renderDashboard();
+
+        // 5. EMIT EVENT BUS - triggers recalcAndRenderAll()
+        window.dispatchEvent(new CustomEvent('data:changed', {
+            detail: {
+                reason: 'appointment:completed',
+                appointmentId: apptId,
+                transactionId: transaction.id
+            }
+        }));
 
         return true;
     },
@@ -2486,6 +2558,49 @@ const App = {
      */
     render() {
         this.renderDashboard();
+    },
+
+    /**
+     * GLOBAL RECALCULATION & RENDERING
+     * This is the single source of truth for all UI updates
+     * Called when any data changes (appointments, transactions, clients)
+     */
+    recalcAndRenderAll() {
+        console.log('[RECALC] Starting global recalculation and re-render...');
+
+        // Get current tab to avoid re-rendering unnecessary sections
+        const currentTab = AppState.currentTab || 'dashboard';
+
+        // Always update Dashboard (KPIs visible everywhere)
+        if (currentTab === 'dashboard') {
+            this.renderDashboard();
+        }
+
+        // Update relevant tab based on current view
+        switch (currentTab) {
+            case 'clients':
+                this.renderClients();
+                break;
+            case 'appointments':
+                this.renderAppointments();
+                break;
+            case 'transactions':
+                this.renderTransactions();
+                break;
+            case 'accounting':
+                this.renderAccounting();
+                break;
+            case 'history':
+                this.renderHistory();
+                break;
+            case 'services':
+                this.renderServices();
+                break;
+            default:
+                this.renderDashboard();
+        }
+
+        console.log('[RECALC] Global recalculation complete');
     },
 
     /**
