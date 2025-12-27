@@ -947,6 +947,57 @@ textarea.input-dark {
     color: var(--color-danger);
 }
 
+.status-late {
+    background: rgba(255, 152, 0, 0.3);
+    color: #FFB74D;
+    font-weight: var(--font-weight-bold);
+    padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.status-late-glow {
+    animation: late-pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+    border-radius: 4px;
+}
+
+@keyframes late-pulse {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(255, 152, 0, 0.8);
+    }
+}
+
+.status-forgotten_checkin {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+.status-no_show {
+    background: rgba(244, 67, 54, 0.2);
+    color: #F44336;
+}
+
+.appointment-card.card-late {
+    border: 2px solid rgba(255, 152, 0, 0.5);
+    background: linear-gradient(135deg, 
+        rgba(255, 152, 0, 0.05) 0%, 
+        var(--color-card-bg) 100%);
+}
+
+.late-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.btn-late-action {
+    white-space: nowrap;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+}
+
 .appointment-actions {
     display: flex;
     gap: var(--spacing-sm);

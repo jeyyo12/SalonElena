@@ -67,6 +67,12 @@ const App = {
         
         // Update date/time every minute
         setInterval(() => this.updateDateTime(), 60000);
+
+        // Late appointment detection every 60 seconds
+        // Check if scheduled appointments have passed grace period (10 min)
+        setInterval(() => {
+            Appointments.autoDetectLateAppointments();
+        }, 60000);
     },
 
     /**
@@ -622,6 +628,9 @@ const App = {
     renderAppointments() {
         if (AppState.currentTab !== 'appointments') return;
 
+        // Auto-detect late appointments before rendering
+        Appointments.autoDetectLateAppointments();
+
         let appointments = [];
         const filter = AppState.appointmentFilter;
 
@@ -646,16 +655,38 @@ const App = {
         list.innerHTML = appointments.map(appt => {
             const client = Clients.getById(appt.clientId);
             const service = Services.getById(appt.serviceId);
+            const isLate = appt.status === 'late';
+            const isCompleted = appt.status === 'completed';
+            const isCancelled = appt.status === 'cancelled';
+
+            // Status badge with styling
+            let statusBadge = `<span class="appointment-status status-${appt.status}">${this.getStatusLabel(appt.status)}</span>`;
+            if (isLate) {
+                statusBadge = `<span class="appointment-status status-late status-late-glow">${this.getStatusLabel(appt.status)}</span>`;
+            }
+
+            // Action buttons for late
+            let lateActions = '';
+            if (isLate) {
+                lateActions = `
+                    <div class="late-actions">
+                        <button class="btn btn-sm btn-success btn-late-action" data-appt-id="${appt.id}" data-action="checkin-appt">A venit</button>
+                        <button class="btn btn-sm btn-warning btn-late-action" data-appt-id="${appt.id}" data-action="more-time-appt">+10 min</button>
+                        <button class="btn btn-sm btn-danger btn-late-action" data-appt-id="${appt.id}" data-action="noshow-appt">Nu a venit</button>
+                    </div>
+                `;
+            }
 
             return `
-                <div class="appointment-card">
+                <div class="appointment-card ${isLate ? 'card-late' : ''}">
                     <div class="appointment-time">${appt.time}</div>
                     <div class="appointment-info">
                         <div class="appointment-client">${client?.name || '-'}</div>
                         <div class="appointment-service">${service?.name || '-'} (${appt.duration} min)</div>
                     </div>
-                    <span class="appointment-status status-${appt.status}">${appt.status}</span>
+                    ${statusBadge}
                     <div class="appointment-actions">
+                        ${lateActions}
                         <button class="btn btn-secondary btn-sm btn-edit" data-appt-id="${appt.id}">Edit</button>
                         <button class="btn btn-danger btn-sm btn-delete" data-appt-id="${appt.id}">Șterge</button>
                     </div>
@@ -663,7 +694,32 @@ const App = {
             `;
         }).join('');
 
-        // Add listeners
+        // Add listeners for late actions
+        list.querySelectorAll('.btn-late-action').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const apptId = e.target.dataset.apptId;
+                const action = e.target.dataset.action;
+                const appt = Appointments.getById(apptId);
+
+                if (action === 'checkin-appt') {
+                    Appointments.markForgottenCheckIn(apptId);
+                    UI.showToast('Marcat: A venit (am uitat)', 'info');
+                    this.renderAppointments();
+                } else if (action === 'more-time-appt') {
+                    Appointments.updateLateNotes(apptId, 10);
+                    UI.showToast('Notă adăugată: +10 min întârziere', 'info');
+                    this.renderAppointments();
+                } else if (action === 'noshow-appt') {
+                    if (confirm('Marchez clienta ca nu a venit?')) {
+                        Appointments.markNoShow(apptId);
+                        UI.showToast('Marcat: Nu a venit', 'danger');
+                        this.renderAppointments();
+                    }
+                }
+            });
+        });
+
+        // Add listeners for edit/delete
         list.querySelectorAll('.btn-edit').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.openAppointmentModal(btn.dataset.apptId);
@@ -1178,6 +1234,9 @@ const App = {
     renderDashboard() {
         if (AppState.currentTab !== 'dashboard') return;
 
+        // Auto-detect late appointments before rendering
+        Appointments.autoDetectLateAppointments();
+
         const today = new Date();
         const summary = Transactions.getDailySummary(UI.getTodayInputValue());
 
@@ -1187,8 +1246,9 @@ const App = {
         document.getElementById('kpiProfit').textContent = UI.formatCurrency(summary.profit);
         document.getElementById('kpiClients').textContent = summary.clientsServed;
 
-        // Render today's appointments
-        const appointments = Appointments.getToday();
+        // Render today's appointments (sorted with late first)
+        let appointments = Appointments.getToday();
+        appointments = Appointments.sortByTime(appointments);
         const apptContainer = document.getElementById('dashboardAppointments');
         
         if (appointments.length === 0) {
@@ -1199,31 +1259,50 @@ const App = {
                 const service = Services.getById(appt.serviceId);
                 const isCompleted = appt.status === 'completed';
                 const isCancelled = appt.status === 'cancelled';
+                const isLate = appt.status === 'late';
+                const isForgottenCheckIn = appt.status === 'forgotten_checkin';
+                const isNoShow = appt.status === 'no_show';
 
                 let buttons = '';
                 
+                // LATE STATUS: Show action buttons for late appointments
+                if (isLate) {
+                    buttons += `
+                        <div class="late-actions">
+                            <button class="btn btn-sm btn-success" data-appt-id="${appt.id}" data-action="checkin-appt" title="A venit (am uitat să notez)">A venit</button>
+                            <button class="btn btn-sm btn-warning" data-appt-id="${appt.id}" data-action="more-time-appt" title="Oferă mai mult timp">+10 min</button>
+                            <button class="btn btn-sm btn-danger" data-appt-id="${appt.id}" data-action="noshow-appt" title="Nu a venit">Nu a venit</button>
+                        </div>
+                    `;
+                }
                 // Finalizează button (only if scheduled)
-                if (!isCompleted && !isCancelled) {
+                else if (!isCompleted && !isCancelled) {
                     buttons += `<button class="btn btn-sm btn-primary" data-appt-id="${appt.id}" data-action="complete-appt" title="Finalizează programare">✓ Finalizează</button>`;
                 }
                 
-                // Cancel button (optional, if not completed/cancelled)
-                if (!isCompleted && !isCancelled) {
+                // Cancel button (for scheduled and forgotten check-in)
+                if (!isCompleted && !isCancelled && (appt.status === 'scheduled' || isForgottenCheckIn)) {
                     buttons += `<button class="btn btn-sm btn-danger" data-appt-id="${appt.id}" data-action="cancel-appt" title="Anulează programare">✕ Anulează</button>`;
                 }
                 
                 // View button (always)
                 buttons += `<button class="btn btn-sm btn-secondary" data-appt-id="${appt.id}" data-action="view-appt" title="Vezi detalii">👁 Vezi</button>`;
 
+                // Status badge with styling
+                let statusBadge = `<span class="appointment-status status-${appt.status}">${this.getStatusLabel(appt.status)}</span>`;
+                if (isLate) {
+                    statusBadge = `<span class="appointment-status status-late status-late-glow">${this.getStatusLabel(appt.status)}</span>`;
+                }
+
                 return `
-                    <div class="appointment-card">
+                    <div class="appointment-card ${isLate ? 'card-late' : ''}">
                         <div class="appointment-time">${appt.time}</div>
                         <div class="appointment-info">
                             <div class="appointment-client">${client?.name || '-'}</div>
                             <div class="appointment-service">${service?.name || '-'}</div>
                         </div>
                         <div class="appointment-actions">
-                            <span class="appointment-status status-${appt.status}">${appt.status}</span>
+                            ${statusBadge}
                             ${buttons}
                         </div>
                     </div>
@@ -1235,12 +1314,12 @@ const App = {
                 btn.addEventListener('click', (e) => {
                     const apptId = e.target.dataset.apptId;
                     const action = e.target.dataset.action;
+                    const appt = Appointments.getById(apptId);
                     
                     if (action === 'complete-appt') {
                         this.openCompleteAppointmentModal(apptId);
                     } else if (action === 'cancel-appt') {
                         if (confirm('Sigur anulezi aceasta programare?')) {
-                            const appt = Appointments.getById(apptId);
                             Appointments.update(apptId, appt.clientId, appt.serviceId, 
                                 appt.date, appt.time, appt.duration,
                                 appt.notes, 'cancelled');
@@ -1249,6 +1328,22 @@ const App = {
                         }
                     } else if (action === 'view-appt') {
                         this.openAppointmentFromDashboard(apptId);
+                    } else if (action === 'checkin-appt') {
+                        // Mark as forgotten check-in
+                        Appointments.markForgottenCheckIn(apptId);
+                        UI.showToast('Marcat: A venit (am uitat)', 'info');
+                        this.renderDashboard();
+                    } else if (action === 'more-time-appt') {
+                        // Update notes with +10 min
+                        Appointments.updateLateNotes(apptId, 10);
+                        UI.showToast('Notă adăugată: +10 min întârziere', 'info');
+                        this.renderDashboard();
+                    } else if (action === 'noshow-appt') {
+                        if (confirm('Marchez clienta ca nu a venit?')) {
+                            Appointments.markNoShow(apptId);
+                            UI.showToast('Marcat: Nu a venit', 'danger');
+                            this.renderDashboard();
+                        }
                     }
                 });
             });
@@ -1280,6 +1375,21 @@ const App = {
                 `;
             }).join('');
         }
+    },
+
+    /**
+     * Get human-readable status label
+     */
+    getStatusLabel(status) {
+        const labels = {
+            scheduled: 'Programat',
+            late: '⏰ Întârzie',
+            forgotten_checkin: 'A venit (uitat)',
+            no_show: 'Nu a venit',
+            completed: 'Finalizat',
+            cancelled: 'Anulat'
+        };
+        return labels[status] || status;
     },
 
     /**

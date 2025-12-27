@@ -89,12 +89,14 @@ const Appointments = {
             time: timeStr,
             duration: parseInt(duration) || 60,
             notes,
-            status, // scheduled, completed, cancelled
+            status, // scheduled, late, forgotten_checkin, no_show, completed, canceled
             isPaid: false,
             paymentAmount: 0,
             paymentMethod: null,
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            lateSince: null, // When marked as late (ISO timestamp)
+            checkInTime: null // When checked in (ISO timestamp)
         };
 
         this.data.push(appointment);
@@ -237,6 +239,12 @@ const Appointments = {
     sortByTime(appointments = null) {
         const list = appointments || this.data;
         return [...list].sort((a, b) => {
+            // Late appointments first
+            const aIsLate = a.status === 'late' ? 0 : 1;
+            const bIsLate = b.status === 'late' ? 0 : 1;
+            if (aIsLate !== bIsLate) return aIsLate - bIsLate;
+
+            // Then by date/time
             const dateA = new Date(a.date).getTime();
             const dateB = new Date(b.date).getTime();
             if (dateA !== dateB) return dateA - dateB;
@@ -248,9 +256,101 @@ const Appointments = {
     },
 
     /**
+     * AUTO-DETECTION: Check all today's appointments and mark as late if needed
+     * Grace period: 10 minutes after scheduled time
+     * Only marks 'scheduled' status appointments as 'late'
+     */
+    autoDetectLateAppointments() {
+        const GRACE_MINUTES = 10;
+        const now = new Date();
+        let updated = false;
+
+        const todayAppointments = this.getToday();
+
+        for (const appt of todayAppointments) {
+            // Only process 'scheduled' appointments (not completed, canceled, or already late)
+            if (appt.status !== 'scheduled') continue;
+
+            // Parse appointment time
+            const [hours, minutes] = appt.time.split(':').map(Number);
+            const apptDateTime = new Date(appt.date);
+            apptDateTime.setHours(hours, minutes, 0, 0);
+
+            // Calculate grace time
+            const graceTime = new Date(apptDateTime.getTime() + GRACE_MINUTES * 60 * 1000);
+
+            // If current time > grace time, mark as late
+            if (now > graceTime) {
+                appt.status = 'late';
+                appt.lateSince = now.toISOString();
+                appt.updatedAt = now.toISOString();
+                updated = true;
+                console.log('[LATE AUTO-DETECT] Appointment marked as late:', appt.id, 'Client:', appt.clientId);
+            }
+        }
+
+        if (updated) {
+            this.save();
+            // Dispatch event for UI updates
+            window.dispatchEvent(new Event('appointments:changed'));
+        }
+
+        return updated;
+    },
+
+    /**
+     * Mark appointment as forgotten check-in
+     */
+    markForgottenCheckIn(appointmentId) {
+        const appt = this.data.find(a => a.id === appointmentId);
+        if (!appt) return null;
+
+        appt.status = 'forgotten_checkin';
+        appt.checkInTime = new Date().toISOString();
+        appt.updatedAt = new Date().toISOString();
+
+        this.save();
+        console.log('[CHECK-IN] Marked as forgotten check-in:', appointmentId);
+        return appt;
+    },
+
+    /**
+     * Mark appointment as no-show
+     */
+    markNoShow(appointmentId) {
+        const appt = this.data.find(a => a.id === appointmentId);
+        if (!appt) return null;
+
+        appt.status = 'no_show';
+        appt.updatedAt = new Date().toISOString();
+
+        this.save();
+        console.log('[NO-SHOW] Marked as no-show:', appointmentId);
+        return appt;
+    },
+
+    /**
+     * Keep appointment late but add note about delay
+     */
+    updateLateNotes(appointmentId, extraMinutes = null) {
+        const appt = this.data.find(a => a.id === appointmentId);
+        if (!appt) return null;
+
+        if (extraMinutes) {
+            const extraNote = `+${extraMinutes} min întârziere`;
+            appt.notes = appt.notes 
+                ? `${appt.notes} (${extraNote})`
+                : extraNote;
+        }
+
+        appt.updatedAt = new Date().toISOString();
+        this.save();
+        return appt;
+    },
+
+    /**
      * Save to storage
      */
     save() {
         Storage.save(Storage.KEYS.APPOINTMENTS, this.data);
-    }
-};
+    }};
