@@ -56,7 +56,7 @@ const Clients = {
             visits: 0,
             totalSpent: 0,
             lastVisitAt: null,
-            tag: 'standard',
+            tag: 'new',
             photos: [],
             mainPhotoId: null,
             createdAt: new Date().toISOString(),

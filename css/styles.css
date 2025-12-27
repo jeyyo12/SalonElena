@@ -886,6 +886,8 @@ textarea.input-dark {
     justify-content: space-between;
     align-items: center;
     transition: all var(--transition-base);
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
 }
 
 .appointment-card:hover {
@@ -903,6 +905,7 @@ textarea.input-dark {
 .appointment-info {
     flex: 1;
     margin: 0 var(--spacing-lg);
+    min-width: 200px;
 }
 
 .appointment-client {
@@ -913,6 +916,12 @@ textarea.input-dark {
 .appointment-service {
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
+}
+
+.appointment-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
 }
 
 .appointment-status {

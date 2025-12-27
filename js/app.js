@@ -1075,6 +1075,7 @@ const App = {
             apptContainer.innerHTML = appointments.map(appt => {
                 const client = Clients.getById(appt.clientId);
                 const service = Services.getById(appt.serviceId);
+                const isCompleted = appt.status === 'completed';
 
                 return `
                     <div class="appointment-card">
@@ -1083,10 +1084,21 @@ const App = {
                             <div class="appointment-client">${client?.name || '-'}</div>
                             <div class="appointment-service">${service?.name || '-'}</div>
                         </div>
-                        <span class="appointment-status status-${appt.status}">${appt.status}</span>
+                        <div class="appointment-actions">
+                            <span class="appointment-status status-${appt.status}">${appt.status}</span>
+                            ${!isCompleted ? `<button class="btn btn-sm btn-primary" data-appt-id="${appt.id}" data-action="complete-appt">✓ Finalizează</button>` : ''}
+                        </div>
                     </div>
                 `;
             }).join('');
+
+            // Add event listeners for complete buttons
+            apptContainer.querySelectorAll('[data-action="complete-appt"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const apptId = e.target.dataset.apptId;
+                    this.completeAppointmentFromDashboard(apptId);
+                });
+            });
         }
 
         // Render recent transactions
@@ -1115,6 +1127,43 @@ const App = {
                 `;
             }).join('');
         }
+    },
+
+    /**
+     * Complete appointment from dashboard
+     */
+    completeAppointmentFromDashboard(apptId) {
+        const appointment = Appointments.getById(apptId);
+        if (!appointment) {
+            UI.showToast('Programare nu găsită', 'error');
+            return;
+        }
+
+        if (appointment.status === 'completed') {
+            UI.showToast('Programare deja finalizată', 'warning');
+            return;
+        }
+
+        // Update appointment status
+        Appointments.update(apptId, appointment.clientId, appointment.serviceId, appointment.date, appointment.time, 'completed');
+        
+        // Update client stats
+        const client = Clients.getById(appointment.clientId);
+        if (client) {
+            client.visits = (client.visits || 0) + 1;
+            client.lastVisitAt = new Date().toISOString();
+            
+            // Recalculate tag based on visits and spending
+            const service = Services.getById(appointment.serviceId);
+            if (service) {
+                client.totalSpent = (client.totalSpent || 0) + service.price;
+            }
+            client.tag = Clients.calculateTag(client.visits, client.totalSpent);
+            Clients.save();
+        }
+
+        UI.showToast('Programare finalizată', 'success');
+        this.renderDashboard();
     },
 
     /**
