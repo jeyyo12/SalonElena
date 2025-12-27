@@ -485,187 +485,222 @@
                     </div>
                 </div>
 
-                <!-- TAX ESTIMATOR SECTION -->
-                <div class="tax-estimator-container">
-                    <div class="tax-estimator-card">
-                        <div class="tax-header">
-                            <h3>💼 Estimare Obligații Fiscale Anuale</h3>
-                            <p class="tax-subheader">Calcul automат pe baza regimului fiscal selectat</p>
+                <!-- PFA TAX ESTIMATOR SECTION -->
+                <div class="pfa-tax-container">
+                    <div class="pfa-tax-card">
+                        <div class="pfa-header">
+                            <h3>📊 Estimare Taxe Anuale PFA (RO)</h3>
+                            <p class="pfa-subheader">Impozit 10% + CAS + CASS - Calculează automat din tranzacții</p>
                         </div>
 
                         <!-- Configuration Panel -->
-                        <div class="tax-config">
-                            <div class="tax-config-row">
-                                <div class="tax-field">
-                                    <label>Regim Fiscal</label>
-                                    <select id="taxRegime" class="input-dark">
-                                        <option value="srl_micro">SRL Microîntreprindere (1-3% din venit)</option>
-                                        <option value="srl_profit">SRL Impozit pe Profit (16% din profit)</option>
-                                        <option value="pfa">PFA / Activitate Independentă</option>
-                                    </select>
-                                </div>
-
-                                <div class="tax-field">
+                        <div class="pfa-config">
+                            <div class="pfa-config-row">
+                                <div class="pfa-field">
                                     <label>An Fiscal</label>
-                                    <input type="number" id="taxFiscalYear" min="2020" max="2100" class="input-dark">
-                                </div>
-
-                                <div class="tax-field">
-                                    <label>Monedă</label>
-                                    <select id="taxCurrency" class="input-dark">
-                                        <option value="RON">RON (lei)</option>
+                                    <select id="pfaTaxYear" class="input-dark">
+                                        <option value="2023">2023</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2025" selected>2025</option>
+                                        <option value="2026">2026</option>
+                                        <option value="2027">2027</option>
                                     </select>
                                 </div>
-                            </div>
 
-                            <!-- Regime-specific configs -->
-                            <div id="taxConfigSrlMicro" class="tax-regime-config active">
-                                <div class="tax-config-row">
-                                    <div class="tax-field">
-                                        <label>Procent Impozit Microîntreprindere (%)</label>
-                                        <div class="input-with-button">
-                                            <input type="number" id="taxMicroRate" min="0.1" max="10" step="0.1" class="input-dark" value="1">
-                                            <span class="input-unit">%</span>
-                                        </div>
-                                        <small class="help-text">1% sau 3% din venit brut</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="taxConfigSrlProfit" class="tax-regime-config" style="display: none;">
-                                <div class="tax-config-row">
-                                    <div class="tax-field">
-                                        <label>Procent Impozit pe Profit (%)</label>
-                                        <div class="input-with-button">
-                                            <input type="number" id="taxProfitRate" min="0.1" max="50" step="0.1" class="input-dark" value="16">
-                                            <span class="input-unit">%</span>
-                                        </div>
-                                        <small class="help-text">Standard 16% din profit net</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="taxConfigPFA" class="tax-regime-config" style="display: none;">
-                                <div class="tax-config-row">
-                                    <div class="tax-field">
-                                        <label>Procent Impozit Venit (%)</label>
-                                        <div class="input-with-button">
-                                            <input type="number" id="taxPfaIncomeRate" min="0.1" max="50" step="0.1" class="input-dark" value="10">
-                                            <span class="input-unit">%</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="tax-field">
-                                        <label>Cotizație CAS lunară (RON)</label>
-                                        <div class="input-with-button">
-                                            <input type="number" id="taxPfaCas" min="0" step="10" class="input-dark" value="350">
-                                            <span class="input-unit">RON</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="tax-field">
-                                        <label>Cotizație CASS lunară (RON)</label>
-                                        <div class="input-with-button">
-                                            <input type="number" id="taxPfaCass" min="0" step="10" class="input-dark" value="110">
-                                            <span class="input-unit">RON</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="tax-config-row">
-                                <div class="tax-field checkbox-field">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="taxIsVATPayer" class="checkbox">
-                                        Sunt plătitor TVA
+                                <div class="pfa-field">
+                                    <label>
+                                        Salariu Minim Brut (RON) – valoare de referință
+                                        <span class="info-icon" title="Această valoare este folosită doar pentru pragurile legale (6/12/24/60 salarii minime). Venitul tău se calculează din încasările reale.">ℹ️</span>
                                     </label>
-                                    <small class="help-text">Numai informativ - nu calculez TVA fără detalii complete</small>
+                                    <input type="number" id="pfaSalariuMinim" min="1000" step="50" class="input-dark" value="4050">
+                                    <small class="help-text">Doar pentru calcul praguri legale, NU salariul tău</small>
                                 </div>
 
-                                <div class="tax-field">
-                                    <label>Nr. Angajați (opțional)</label>
-                                    <input type="number" id="taxEmployeeCount" min="0" class="input-dark" value="0">
-                                </div>
-
-                                <div class="tax-field">
-                                    <label>Cost Salarial Estimat (opțional)</label>
+                                <div class="pfa-field">
+                                    <label>Rata Impozit Venit (%)</label>
                                     <div class="input-with-button">
-                                        <input type="number" id="taxSalaryCost" min="0" step="100" class="input-dark" value="0">
-                                        <span class="input-unit">RON</span>
+                                        <input type="number" id="pfaIncomeRate" min="0.1" max="50" step="0.1" class="input-dark" value="10">
+                                        <span class="input-unit">%</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="tax-actions">
-                                <button class="btn btn-primary" id="btnCalculateTaxes">🧮 Recalculează</button>
-                                <button class="btn btn-secondary" id="btnExportTaxCSV">📥 Export CSV</button>
+                            <div class="pfa-config-row">
+                                <div class="pfa-field">
+                                    <label>Rata CAS (%)</label>
+                                    <div class="input-with-button">
+                                        <input type="number" id="pfaCasRate" min="0.1" max="50" step="0.1" class="input-dark" value="25">
+                                        <span class="input-unit">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="pfa-field">
+                                    <label>Rata CASS (%)</label>
+                                    <div class="input-with-button">
+                                        <input type="number" id="pfaCassRate" min="0.1" max="50" step="0.1" class="input-dark" value="10">
+                                        <span class="input-unit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pfa-config-row checkbox-row">
+                                <div class="pfa-field checkbox-field">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="pfaExceptCAS" class="checkbox">
+                                        Sunt pensionar / exceptat de la CAS
+                                    </label>
+                                </div>
+
+                                <div class="pfa-field checkbox-field">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="pfaPreviousSalary" class="checkbox">
+                                        Am venituri salariale în an precedent ≥ 6 salarii minime
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="pfa-actions">
+                                <button class="btn btn-primary" id="btnCalculatePfaTaxes">🧮 Calculează</button>
+                                <button class="btn btn-secondary" id="btnExportPfaTaxCSV" style="display: none;">📥 Export CSV</button>
                             </div>
                         </div>
 
                         <!-- Results Section -->
-                        <div id="taxResultsContainer" class="tax-results" style="display: none;">
+                        <div id="pfaTaxResultsContainer" class="pfa-results" style="display: none;">
                             <div class="results-disclaimer">
-                                ⚠️ <strong>ESTIMARE ORIENTATIVĂ</strong> – Pentru depuneri oficiale și calcule precise consultă un contabil autorizat sau <strong>ANAF</strong>.
+                                ⚠️ <strong>ESTIMARE ORIENTATIVĂ</strong> – Estimare orientativă pe baza tranzacțiilor introduse. Pentru depunere oficială (Declarația Unică) verifică împreună cu un contabil / ANAF.
                             </div>
 
                             <!-- Summary Cards -->
-                            <div class="tax-summary-cards">
+                            <div class="pfa-summary-cards">
                                 <div class="summary-card income">
                                     <div class="card-label">Venituri Anuale</div>
-                                    <div class="card-value" id="taxSummaryIncome">0 RON</div>
+                                    <div class="card-value" id="pfaSummaryIncome">0 RON</div>
                                 </div>
                                 <div class="summary-card expense">
                                     <div class="card-label">Cheltuieli Anuale</div>
-                                    <div class="card-value" id="taxSummaryExpense">0 RON</div>
+                                    <div class="card-value" id="pfaSummaryExpense">0 RON</div>
                                 </div>
                                 <div class="summary-card profit">
-                                    <div class="card-label">Profit Net</div>
-                                    <div class="card-value" id="taxSummaryProfit">0 RON</div>
+                                    <div class="card-label">Venit Net</div>
+                                    <div class="card-value" id="pfaSummaryNet">0 RON</div>
                                 </div>
-                                <div class="summary-card highlight">
-                                    <div class="card-label">Total Obligații Fiscale</div>
-                                    <div class="card-value" id="taxSummaryTotal">0 RON</div>
+                            </div>
+
+                            <!-- YTD (Year-to-Date) Section -->
+                            <div id="pfaYTDSection" class="pfa-ytd-section" style="display: none;">
+                                <h4>📈 Evoluție Actuală (Year-to-Date)</h4>
+                                <div class="pfa-ytd-info">
+                                    <span id="pfaYTDInfo" class="ytd-info-text"></span>
+                                </div>
+                                <div class="pfa-ytd-cards">
+                                    <div class="ytd-card">
+                                        <div class="ytd-label">Venituri YTD</div>
+                                        <div class="ytd-value" id="pfaYTDIncome">0 RON</div>
+                                    </div>
+                                    <div class="ytd-card">
+                                        <div class="ytd-label">Cheltuieli YTD</div>
+                                        <div class="ytd-value" id="pfaYTDExpense">0 RON</div>
+                                    </div>
+                                    <div class="ytd-card">
+                                        <div class="ytd-label">Net YTD</div>
+                                        <div class="ytd-value" id="pfaYTDNet">0 RON</div>
+                                    </div>
+                                    <div class="ytd-card tax">
+                                        <div class="ytd-label">Taxe Estimate YTD</div>
+                                        <div class="ytd-value" id="pfaYTDTaxes">0 RON</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Projection Section -->
+                            <div id="pfaProjectionSection" class="pfa-projection-section" style="display: none;">
+                                <h4>🔮 Estimare Până la Finalul Anului</h4>
+                                <div class="pfa-projection-info">
+                                    <span id="pfaProjectionInfo" class="projection-info-text"></span>
+                                </div>
+                                <div class="pfa-projection-cards">
+                                    <div class="projection-card">
+                                        <div class="projection-label">Net Estimat (dacă menții ritmul)</div>
+                                        <div class="projection-value" id="pfaProjectedNet">0 RON</div>
+                                    </div>
+                                    <div class="projection-card tax">
+                                        <div class="projection-label">Taxe Estimate pentru An Complet</div>
+                                        <div class="projection-value" id="pfaProjectedTaxes">0 RON</div>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Tax Breakdown -->
-                            <div class="tax-breakdown">
-                                <h4>Detaliu Calcul</h4>
-                                <div id="taxBreakdownDetails" class="breakdown-details">
-                                    <!-- Populated by JS -->
+                            <div class="pfa-tax-breakdown">
+                                <h4>Calcul Detaliat</h4>
+                                <div class="pfa-breakdown-grid">
+                                    <div class="breakdown-item">
+                                        <div class="breakdown-label">Impozit Venit (10%)</div>
+                                        <div class="breakdown-value" id="pfaBreakdownIncomeTax">0 RON</div>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <div class="breakdown-label">Bază CAS</div>
+                                        <div class="breakdown-value" id="pfaBreakdownCasBase">0 RON</div>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <div class="breakdown-label">CAS (25%)</div>
+                                        <div class="breakdown-value" id="pfaBreakdownCas">0 RON</div>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <div class="breakdown-label">Bază CASS</div>
+                                        <div class="breakdown-value" id="pfaBreakdownCassBase">0 RON</div>
+                                    </div>
+                                    <div class="breakdown-item">
+                                        <div class="breakdown-label">CASS (10%)</div>
+                                        <div class="breakdown-value" id="pfaBreakdownCass">0 RON</div>
+                                    </div>
+                                    <div class="breakdown-item highlight">
+                                        <div class="breakdown-label"><strong>TOTAL OBLIGAȚII</strong></div>
+                                        <div class="breakdown-value" id="pfaBreakdownTotal">0 RON</div>
+                                    </div>
+                                </div>
+
+                                <!-- Explanation of bases -->
+                                <div class="pfa-base-explanations">
+                                    <div class="explanation-item">
+                                        <strong>CAS:</strong>
+                                        <span id="pfaCASExplanation"></span>
+                                    </div>
+                                    <div class="explanation-item">
+                                        <strong>CASS:</strong>
+                                        <span id="pfaCASSExplanation"></span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Data Quality Info -->
-                            <div class="tax-data-quality">
+                            <!-- Data Quality -->
+                            <div class="pfa-data-quality">
                                 <h4>Date Incluse</h4>
                                 <div class="quality-info">
                                     <div class="quality-item">
-                                        <span class="quality-label">Venituri:</span>
-                                        <span class="quality-value" id="taxDataIncomeCount">0</span>
-                                        <span class="quality-unit">tranzacții</span>
+                                        <span class="quality-label">Tranzacții venituri:</span>
+                                        <span class="quality-value" id="pfaDataIncome">0</span>
                                     </div>
                                     <div class="quality-item">
-                                        <span class="quality-label">Cheltuieli:</span>
-                                        <span class="quality-value" id="taxDataExpenseCount">0</span>
-                                        <span class="quality-unit">tranzacții</span>
+                                        <span class="quality-label">Tranzacții cheltuieli:</span>
+                                        <span class="quality-value" id="pfaDataExpense">0</span>
                                     </div>
                                     <div class="quality-item">
                                         <span class="quality-label">Total:</span>
-                                        <span class="quality-value" id="taxDataTotalCount">0</span>
-                                        <span class="quality-unit">tranzacții</span>
+                                        <span class="quality-value" id="pfaDataTotal">0</span>
                                     </div>
                                     <div class="quality-item">
                                         <span class="quality-label">Sursă:</span>
-                                        <span class="quality-value">localStorage (confirmed & non-void)</span>
+                                        <span class="quality-value">localStorage("transactions")</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Assumptions -->
-                            <div class="tax-assumptions">
-                                <h4>Asumpții și Setări</h4>
-                                <ul id="taxAssumptionsList" class="assumptions-list">
+                            <div class="pfa-assumptions">
+                                <h4>Asumpții și Reguli</h4>
+                                <ul id="pfaAssumptionsList" class="assumptions-list">
                                     <!-- Populated by JS -->
                                 </ul>
                             </div>
@@ -1073,6 +1108,7 @@
     <script src="js/history.js"></script>
     <script src="js/accounting.js"></script>
     <script src="js/taxEstimator.js"></script>
+    <script src="js/pfaTaxEstimator.js"></script>
     <script src="js/app.js"></script>
 
     <!-- DEBUG: Click Event Monitor (temporary - remove after testing) -->

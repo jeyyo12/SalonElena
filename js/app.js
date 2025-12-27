@@ -1983,6 +1983,9 @@ const App = {
 
         // Render tax estimator section
         this.setupTaxEstimator();
+
+        // Render PFA tax estimator section
+        this.setupPfaEstimator();
     },
 
     /**
@@ -2065,6 +2068,183 @@ const App = {
         TaxEstimator.config.estimatedSalaryCost = parseFloat(document.getElementById('taxSalaryCost').value);
 
         TaxEstimator.saveConfig();
+    },
+
+    /**
+     * Setup and render PFA tax estimator section
+     */
+    setupPfaEstimator() {
+        // Load config into UI
+        const pfaTaxYearSelect = document.getElementById('pfaTaxYear');
+        const pfaSalariuInput = document.getElementById('pfaSalariuMinim');
+        const pfaIncomeRateInput = document.getElementById('pfaIncomeRate');
+        const pfaCasRateInput = document.getElementById('pfaCasRate');
+        const pfaCassRateInput = document.getElementById('pfaCassRate');
+        const pfaExceptCASCheckbox = document.getElementById('pfaExceptCAS');
+        const pfaPreviousSalaryCheckbox = document.getElementById('pfaPreviousSalary');
+
+        // Load config values
+        if (pfaTaxYearSelect) pfaTaxYearSelect.value = PfaTaxEstimator.config.selectedYear;
+        if (pfaSalariuInput) pfaSalariuInput.value = PfaTaxEstimator.config.salariu_minim_brut;
+        if (pfaIncomeRateInput) pfaIncomeRateInput.value = (PfaTaxEstimator.config.income_tax_rate * 100).toFixed(1);
+        if (pfaCasRateInput) pfaCasRateInput.value = (PfaTaxEstimator.config.cas_rate * 100).toFixed(1);
+        if (pfaCassRateInput) pfaCassRateInput.value = (PfaTaxEstimator.config.cass_rate * 100).toFixed(1);
+        if (pfaExceptCASCheckbox) pfaExceptCASCheckbox.checked = PfaTaxEstimator.config.exceptCAS;
+        if (pfaPreviousSalaryCheckbox) pfaPreviousSalaryCheckbox.checked = PfaTaxEstimator.config.previousSalaryIncome;
+
+        // Event listeners
+        pfaTaxYearSelect?.addEventListener('change', () => {
+            this.savePfaConfig();
+        });
+
+        pfaSalariuInput?.addEventListener('change', () => {
+            this.savePfaConfig();
+        });
+
+        pfaIncomeRateInput?.addEventListener('change', () => {
+            this.savePfaConfig();
+        });
+
+        pfaCasRateInput?.addEventListener('change', () => {
+            this.savePfaConfig();
+        });
+
+        pfaCassRateInput?.addEventListener('change', () => {
+            this.savePfaConfig();
+        });
+
+        pfaExceptCASCheckbox?.addEventListener('change', () => {
+            this.savePfaConfig();
+        });
+
+        pfaPreviousSalaryCheckbox?.addEventListener('change', () => {
+            this.savePfaConfig();
+        });
+
+        document.getElementById('btnCalculatePfaTaxes')?.addEventListener('click', () => {
+            this.calculateAndRenderPfaTaxes();
+        });
+
+        document.getElementById('btnExportPfaTaxCSV')?.addEventListener('click', () => {
+            const year = parseInt(document.getElementById('pfaTaxYear').value);
+            PfaTaxEstimator.downloadCSV(year);
+            UI.showToast('Raport PFA exportat', 'success');
+        });
+    },
+
+    /**
+     * Save PFA config
+     */
+    savePfaConfig() {
+        PfaTaxEstimator.config.selectedYear = parseInt(document.getElementById('pfaTaxYear')?.value || new Date().getFullYear());
+        PfaTaxEstimator.config.salariu_minim_brut = parseFloat(document.getElementById('pfaSalariuMinim')?.value || 4050);
+        PfaTaxEstimator.config.income_tax_rate = parseFloat(document.getElementById('pfaIncomeRate')?.value || 10) / 100;
+        PfaTaxEstimator.config.cas_rate = parseFloat(document.getElementById('pfaCasRate')?.value || 25) / 100;
+        PfaTaxEstimator.config.cass_rate = parseFloat(document.getElementById('pfaCassRate')?.value || 10) / 100;
+        PfaTaxEstimator.config.exceptCAS = document.getElementById('pfaExceptCAS')?.checked || false;
+        PfaTaxEstimator.config.previousSalaryIncome = document.getElementById('pfaPreviousSalary')?.checked || false;
+
+        PfaTaxEstimator.saveConfig();
+    },
+
+    /**
+     * Calculate and render PFA tax results
+     */
+    calculateAndRenderPfaTaxes() {
+        // Save config first
+        this.savePfaConfig();
+
+        // Get year
+        const year = PfaTaxEstimator.config.selectedYear;
+
+        // Calculate full year and YTD/projection data
+        const summary = PfaTaxEstimator.getSummary(year);
+        const ytdProjection = PfaTaxEstimator.calculateYTDAndProjection(year);
+        const thresholds = PfaTaxEstimator.getThresholds();
+
+        // Show results
+        const resultsContainer = document.getElementById('pfaTaxResultsContainer');
+        if (!resultsContainer) return;
+        
+        resultsContainer.style.display = 'block';
+
+        // Update summary cards (full year)
+        document.getElementById('pfaSummaryIncome').textContent = UI.formatCurrency(summary.income) + ' RON';
+        document.getElementById('pfaSummaryExpense').textContent = UI.formatCurrency(summary.expenses) + ' RON';
+        document.getElementById('pfaSummaryNet').textContent = UI.formatCurrency(summary.net) + ' RON';
+
+        // Update breakdown
+        document.getElementById('pfaBreakdownIncomeTax').textContent = UI.formatCurrency(summary.incomeTax) + ' RON';
+        document.getElementById('pfaBreakdownCasBase').textContent = UI.formatCurrency(summary.casBase) + ' RON';
+        document.getElementById('pfaBreakdownCas').textContent = UI.formatCurrency(summary.cas) + ' RON';
+        document.getElementById('pfaBreakdownCassBase').textContent = UI.formatCurrency(summary.cassBase) + ' RON';
+        document.getElementById('pfaBreakdownCass').textContent = UI.formatCurrency(summary.cass) + ' RON';
+        document.getElementById('pfaBreakdownTotal').textContent = UI.formatCurrency(summary.totalDue) + ' RON';
+
+        // Update CAS/CASS explanations
+        document.getElementById('pfaCASExplanation').textContent = summary.casExplanation;
+        document.getElementById('pfaCASSExplanation').textContent = summary.cassExplanation;
+
+        // Update data quality
+        document.getElementById('pfaDataIncome').textContent = summary.incomeCount;
+        document.getElementById('pfaDataExpense').textContent = summary.expenseCount;
+        document.getElementById('pfaDataTotal').textContent = summary.incomeCount + summary.expenseCount;
+
+        // YTD Section (only show if current year)
+        const ytdSection = document.getElementById('pfaYTDSection');
+        if (ytdProjection.ytd.isCurrentYear) {
+            ytdSection.style.display = 'block';
+
+            // YTD info text
+            document.getElementById('pfaYTDInfo').textContent = 
+                `Până în prezent: ${ytdProjection.ytd.daysElapsed} zile din ${ytdProjection.ytd.totalDaysInYear} zile`;
+
+            // YTD cards
+            document.getElementById('pfaYTDIncome').textContent = UI.formatCurrency(ytdProjection.ytd.income) + ' RON';
+            document.getElementById('pfaYTDExpense').textContent = UI.formatCurrency(ytdProjection.ytd.expenses) + ' RON';
+            document.getElementById('pfaYTDNet').textContent = UI.formatCurrency(ytdProjection.ytd.net) + ' RON';
+            document.getElementById('pfaYTDTaxes').textContent = UI.formatCurrency(ytdProjection.ytd.totalDue) + ' RON';
+        } else {
+            ytdSection.style.display = 'none';
+        }
+
+        // Projection Section (only show if current year)
+        const projectionSection = document.getElementById('pfaProjectionSection');
+        if (ytdProjection.ytd.isCurrentYear && ytdProjection.ytd.daysElapsed > 0) {
+            projectionSection.style.display = 'block';
+
+            // Projection info text
+            document.getElementById('pfaProjectionInfo').textContent = 
+                ytdProjection.projection.info || 'Estimare pe baza ritmului actual';
+
+            // Projection cards
+            document.getElementById('pfaProjectedNet').textContent = UI.formatCurrency(ytdProjection.projection.net) + ' RON';
+            document.getElementById('pfaProjectedTaxes').textContent = UI.formatCurrency(ytdProjection.projection.totalDue) + ' RON';
+        } else {
+            projectionSection.style.display = 'none';
+        }
+
+        // Update assumptions
+        const assumptionsList = document.getElementById('pfaAssumptionsList');
+        if (assumptionsList) {
+            assumptionsList.innerHTML = '';
+            
+            // Add threshold information
+            assumptionsList.innerHTML += `<li><strong>Praguri CAS:</strong> Minim 12 salarii = ${thresholds.prag12.toFixed(0)} RON | Maxim 24 salarii = ${thresholds.prag24.toFixed(0)} RON</li>`;
+            assumptionsList.innerHTML += `<li><strong>Praguri CASS:</strong> Minim 6 salarii = ${thresholds.minCASS.toFixed(0)} RON | Maxim 60 salarii = ${thresholds.maxCASS.toFixed(0)} RON</li>`;
+            
+            // Add existing assumptions
+            summary.assumptions.forEach(assumption => {
+                const li = document.createElement('li');
+                li.textContent = assumption;
+                assumptionsList.appendChild(li);
+            });
+        }
+
+        // Show export button
+        document.getElementById('btnExportPfaTaxCSV').style.display = 'inline-block';
+
+        Logger.log('[PFA TAX ESTIMATOR] Calculations rendered for year:', year);
     },
 
     /**
