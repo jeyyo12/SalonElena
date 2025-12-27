@@ -431,19 +431,38 @@ const Accounting = {
                 const service = Services.getById(appt.serviceId);
                 if (!service) return;
 
+                // Get client name
+                const client = Clients.getById(appt.clientId);
+                const clientName = client ? client.name : 'Client';
+
                 // Create income transaction
-                this.addTransaction({
+                const tx = this.addTransaction({
                     type: 'income',
                     dateTime: appt.date,
                     amount: service.price,
                     category: 'Services',
-                    paymentMethod: 'cash',
+                    paymentMethod: appt.paymentMethod || 'cash',
                     serviceName: service.name,
                     clientId: appt.clientId,
                     appointmentId: appt.id,
                     source: 'appointment',
                     sourceId: `appt-${appt.id}`
                 });
+
+                // Emit payment confirmed event for toast
+                if (tx) {
+                    window.dispatchEvent(new CustomEvent('ui:payment-confirmed', {
+                        detail: {
+                            transactionId: tx.id,
+                            appointmentId: appt.id,
+                            clientName: clientName,
+                            serviceName: service.name,
+                            amount: service.price,
+                            paymentMethod: appt.paymentMethod || 'cash',
+                            dateTime: appt.date
+                        }
+                    }));
+                }
             }
         });
 
