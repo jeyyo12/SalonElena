@@ -1980,9 +1980,202 @@ const App = {
 
         // Render reports
         this.renderAccountingReports(startDate, endDate, summary);
+
+        // Render tax estimator section
+        this.setupTaxEstimator();
     },
 
-    populateCategories() {
+    /**
+     * Setup and render tax estimator section
+     */
+    setupTaxEstimator() {
+        // Load config into UI
+        const taxRegimeSelect = document.getElementById('taxRegime');
+        const taxFiscalYearInput = document.getElementById('taxFiscalYear');
+
+        if (taxRegimeSelect) taxRegimeSelect.value = TaxEstimator.config.regime;
+        if (taxFiscalYearInput) taxFiscalYearInput.value = TaxEstimator.config.fiscalYear;
+
+        // Load rate inputs
+        document.getElementById('taxMicroRate').value = (TaxEstimator.config.micro_tax_rate * 100).toFixed(1);
+        document.getElementById('taxProfitRate').value = (TaxEstimator.config.profit_tax_rate * 100).toFixed(1);
+        document.getElementById('taxPfaIncomeRate').value = (TaxEstimator.config.pfa_income_tax_rate * 100).toFixed(1);
+        document.getElementById('taxPfaCas').value = TaxEstimator.config.pfa_cas_monthly;
+        document.getElementById('taxPfaCass').value = TaxEstimator.config.pfa_cass_monthly;
+
+        // Load other configs
+        document.getElementById('taxIsVATPayer').checked = TaxEstimator.config.isVATpayer;
+        document.getElementById('taxEmployeeCount').value = TaxEstimator.config.employeeCount;
+        document.getElementById('taxSalaryCost').value = TaxEstimator.config.estimatedSalaryCost;
+
+        // Show/hide regime-specific configs
+        this.updateTaxRegimeConfig();
+
+        // Event listeners
+        taxRegimeSelect?.addEventListener('change', () => {
+            TaxEstimator.config.regime = taxRegimeSelect.value;
+            this.updateTaxRegimeConfig();
+        });
+
+        document.getElementById('btnCalculateTaxes')?.addEventListener('click', () => {
+            this.calculateAndRenderTaxes();
+        });
+
+        document.getElementById('btnExportTaxCSV')?.addEventListener('click', () => {
+            const year = parseInt(document.getElementById('taxFiscalYear').value);
+            TaxEstimator.downloadCSV(year);
+            UI.showToast('Raport taxe exportat', 'success');
+        });
+
+        // Save config when inputs change
+        const configInputs = document.querySelectorAll(
+            '#taxMicroRate, #taxProfitRate, #taxPfaIncomeRate, #taxPfaCas, #taxPfaCass, #taxFiscalYear, #taxIsVATPayer, #taxEmployeeCount, #taxSalaryCost'
+        );
+        configInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                this.saveTaxConfig();
+            });
+        });
+    },
+
+    /**
+     * Update visible config based on selected regime
+     */
+    updateTaxRegimeConfig() {
+        const regime = document.getElementById('taxRegime').value;
+        
+        document.getElementById('taxConfigSrlMicro').classList.toggle('active', regime === 'srl_micro');
+        document.getElementById('taxConfigSrlProfit').classList.toggle('active', regime === 'srl_profit');
+        document.getElementById('taxConfigPFA').classList.toggle('active', regime === 'pfa');
+    },
+
+    /**
+     * Save tax estimator config to TaxEstimator
+     */
+    saveTaxConfig() {
+        TaxEstimator.config.regime = document.getElementById('taxRegime').value;
+        TaxEstimator.config.fiscalYear = parseInt(document.getElementById('taxFiscalYear').value);
+        TaxEstimator.config.micro_tax_rate = parseFloat(document.getElementById('taxMicroRate').value) / 100;
+        TaxEstimator.config.profit_tax_rate = parseFloat(document.getElementById('taxProfitRate').value) / 100;
+        TaxEstimator.config.pfa_income_tax_rate = parseFloat(document.getElementById('taxPfaIncomeRate').value) / 100;
+        TaxEstimator.config.pfa_cas_monthly = parseFloat(document.getElementById('taxPfaCas').value);
+        TaxEstimator.config.pfa_cass_monthly = parseFloat(document.getElementById('taxPfaCass').value);
+        TaxEstimator.config.isVATpayer = document.getElementById('taxIsVATPayer').checked;
+        TaxEstimator.config.employeeCount = parseInt(document.getElementById('taxEmployeeCount').value);
+        TaxEstimator.config.estimatedSalaryCost = parseFloat(document.getElementById('taxSalaryCost').value);
+
+        TaxEstimator.saveConfig();
+    },
+
+    /**
+     * Calculate and render tax estimator results
+     */
+    calculateAndRenderTaxes() {
+        // Save config first
+        this.saveTaxConfig();
+
+        // Get year from input
+        const year = parseInt(document.getElementById('taxFiscalYear').value);
+
+        // Calculate
+        const summary = TaxEstimator.getSummary(year);
+
+        // Show results
+        const resultsContainer = document.getElementById('taxResultsContainer');
+        resultsContainer.classList.add('active');
+        resultsContainer.style.display = 'block';
+
+        // Update summary cards
+        document.getElementById('taxSummaryIncome').textContent = UI.formatCurrency(summary.income) + ' RON';
+        document.getElementById('taxSummaryExpense').textContent = UI.formatCurrency(summary.expenses) + ' RON';
+        document.getElementById('taxSummaryProfit').textContent = UI.formatCurrency(summary.profit) + ' RON';
+        document.getElementById('taxSummaryTotal').textContent = UI.formatCurrency(summary.totalTax) + ' RON';
+
+        // Update data quality
+        document.getElementById('taxDataIncomeCount').textContent = summary.totals.incomeCount;
+        document.getElementById('taxDataExpenseCount').textContent = summary.totals.expenseCount;
+        document.getElementById('taxDataTotalCount').textContent = summary.totals.transactionCount;
+
+        // Update breakdown
+        const breakdownDiv = document.getElementById('taxBreakdownDetails');
+        breakdownDiv.innerHTML = '';
+
+        if (summary.regime === 'srl_micro') {
+            breakdownDiv.innerHTML = `
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Venituri Brute</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.income)} RON</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Procent Impozit</div>
+                    <div class="breakdown-item-value">${(TaxEstimator.config.micro_tax_rate * 100).toFixed(1)}%</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Impozit Anual</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.grossTax)} RON</div>
+                </div>
+            `;
+        } else if (summary.regime === 'srl_profit') {
+            breakdownDiv.innerHTML = `
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Venituri Anuale</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.income)} RON</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Cheltuieli Deductibile</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.expenses)} RON</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Profit Impozabil</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(Math.max(0, summary.profit))} RON</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Procent Tax (16%)</div>
+                    <div class="breakdown-item-value">${(TaxEstimator.config.profit_tax_rate * 100).toFixed(1)}%</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Impozit Anual</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.grossTax)} RON</div>
+                </div>
+            `;
+        } else if (summary.regime === 'pfa') {
+            breakdownDiv.innerHTML = `
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Profit Net</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(Math.max(0, summary.profit))} RON</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Impozit Venit (${(TaxEstimator.config.pfa_income_tax_rate * 100).toFixed(1)}%)</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.grossTax)} RON</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">CAS anual (${TaxEstimator.config.pfa_cas_monthly} RON × 12)</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.casContribution)} RON</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">CASS anual (${TaxEstimator.config.pfa_cass_monthly} RON × 12)</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.cassContribution)} RON</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="breakdown-item-label">Total Obligații</div>
+                    <div class="breakdown-item-value">${UI.formatCurrency(summary.totalTax)} RON</div>
+                </div>
+            `;
+        }
+
+        // Update assumptions
+        const assumptionsList = document.getElementById('taxAssumptionsList');
+        assumptionsList.innerHTML = '';
+        summary.assumptions.forEach(assumption => {
+            const li = document.createElement('li');
+            li.textContent = assumption;
+            assumptionsList.appendChild(li);
+        });
+
+        Logger.log('[TAX ESTIMATOR] Calculations rendered for year:', year);
+    },
+
+    renderAccountingReports(startDate, endDate, summary) {
         const categorySelect = document.getElementById('accCategories');
         if (!categorySelect) return;
 
