@@ -321,46 +321,71 @@
             <section id="accounting" class="tab-section">
                 <div class="section-header">
                     <h1>Contabilitate</h1>
-                    <button class="btn btn-primary btn-sm" id="btnExportAccounting">📥 Export CSV</button>
+                    <div class="section-buttons">
+                        <button class="btn btn-secondary btn-sm" id="btnRecurringExpenses">⚙️ Cheltuieli Lunare</button>
+                        <button class="btn btn-secondary btn-sm" id="btnExportAccounting">📥 Export CSV</button>
+                    </div>
                 </div>
 
-                <!-- Filters -->
+                <!-- Filters Card -->
                 <div class="accounting-filters-card">
                     <div class="filters-grid">
                         <div class="filter-group">
-                            <label>Perioada</label>
+                            <label class="filter-label">Interval Date</label>
                             <div class="date-range">
                                 <input type="date" id="accDateStart" class="input-filter">
-                                <span>→</span>
+                                <span class="date-separator">→</span>
                                 <input type="date" id="accDateEnd" class="input-filter">
                             </div>
                         </div>
 
                         <div class="filter-group">
-                            <label>Tip</label>
+                            <label class="filter-label">Tip</label>
                             <select id="accType" class="select-filter">
+                                <option value="all">Toate tranzacțiile</option>
+                                <option value="income">Doar Venituri</option>
+                                <option value="expense">Doar Cheltuieli</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">Status</label>
+                            <select id="accStatus" class="select-filter">
                                 <option value="all">Toate</option>
-                                <option value="income">Venituri</option>
-                                <option value="expense">Cheltuieli</option>
+                                <option value="confirmed">Confirmate</option>
+                                <option value="void">Anulate</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Metodă Plată</label>
+                            <div class="checkbox-group-modern">
+                                <label class="checkbox-label"><input type="checkbox" value="cash" class="acc-payment-method"> Numerar</label>
+                                <label class="checkbox-label"><input type="checkbox" value="card" class="acc-payment-method"> Card</label>
+                                <label class="checkbox-label"><input type="checkbox" value="transfer" class="acc-payment-method"> Transfer</label>
+                            </div>
                         </div>
 
                         <div class="filter-group">
-                            <label>Metodă Plată</label>
-                            <select id="accPaymentMethod" class="select-filter">
-                                <option value="">Toate</option>
-                                <option value="cash">Numerar</option>
-                                <option value="card">Card</option>
-                                <option value="transfer">Transfer</option>
+                            <label class="filter-label">Categorie</label>
+                            <select id="accCategories" class="select-filter" multiple size="3">
+                                <option value="">-- Toate --</option>
+                                <!-- Populated by JS -->
                             </select>
                         </div>
+                    </div>
 
-                        <div class="filter-group">
-                            <label>Căutare</label>
-                            <input type="text" id="accSearch" placeholder="Client / Serviciu..." class="input-filter">
+                    <div class="filters-grid">
+                        <div class="filter-group filter-search">
+                            <label class="filter-label">Căutare</label>
+                            <input type="text" id="accSearch" placeholder="Client / Serviciu / Notă..." class="input-filter input-search-large">
                         </div>
 
-                        <button class="btn btn-secondary" id="btnResetFilters">Resetează</button>
+                        <div class="filter-actions">
+                            <button class="btn btn-secondary btn-sm" id="btnResetFilters">↻ Resetează</button>
+                        </div>
                     </div>
                 </div>
 
@@ -379,7 +404,7 @@
                         <div class="kpi-value" id="accProfitTotal">0 RON</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-label">Numerar</div>
+                        <div class="kpi-label">Cash</div>
                         <div class="kpi-value" id="accCashTotal">0 RON</div>
                     </div>
                     <div class="kpi-card">
@@ -390,165 +415,39 @@
                         <div class="kpi-label">Transfer</div>
                         <div class="kpi-value" id="accTransferTotal">0 RON</div>
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-label">Tranzacții</div>
-                        <div class="kpi-value" id="accTxCount">0</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-label">Clienți Serviți</div>
-                        <div class="kpi-value" id="accClientsCount">0</div>
-                    </div>
                 </div>
 
-                <!-- Tabs -->
+                <!-- Tabs: List | Reports (Manual input buttons hidden - read-only mode) -->
                 <div class="accounting-tabs">
-                    <button class="acc-tab-btn active" data-acc-tab="transactions">📋 Tranzacții</button>
-                    <button class="acc-tab-btn" data-acc-tab="reports">📊 Rapoarte</button>
-                    <button class="acc-tab-btn" data-acc-tab="forms">✏️ Adaugă</button>
+                    <button class="acc-tab-btn active" data-acc-tab="list">📋 Lista Tranzacții</button>
+                    <button class="acc-tab-btn" data-acc-tab="reports">📊 Rapoarte & Analiză</button>
                 </div>
 
-                <!-- TAB: Transactions List -->
-                <div id="acc-tab-transactions" class="acc-tab-content active">
-                    <div id="accountingTransactionsList">
-                        <p class="empty-state">Nicio tranzacție</p>
+                <!-- TAB: List Transactions -->
+                <div id="acc-tab-list" class="acc-tab-content active">
+                    <div id="accTransactionsList" class="accounting-transactions">
+                        <p class="empty-state">Nu sunt tranzacții</p>
                     </div>
                 </div>
 
                 <!-- TAB: Reports -->
                 <div id="acc-tab-reports" class="acc-tab-content">
-                    <h3 style="margin-bottom: var(--spacing-lg);">Rapoarte & Analiză</h3>
+                    <div class="reports-container">
+                        <h3>Rapoarte & Analiză</h3>
 
-                    <div class="reports-grid">
-                        <div class="report-card">
+                        <!-- Daily Expenses Summary -->
+                        <div class="report-section">
+                            <h4>💰 Cheltuieli pe Zile</h4>
+                            <div id="dailyExpenseSummary" class="daily-summary-table">
+                                <p class="empty-state">Nu există cheltuieli pentru perioada selectată</p>
+                            </div>
+                        </div>
+
+                        <!-- Daily Profit Summary -->
+                        <div class="report-section">
                             <h4>📈 Profit pe Zile</h4>
-                            <div id="accountingDayBreakdown">
-                                <p class="empty-state">Nu sunt date</p>
-                            </div>
-                        </div>
-
-                        <div class="report-card">
-                            <h4>💰 Top Cheltuieli</h4>
-                            <div id="accountingTopExpenses">
-                                <p class="empty-state">Nu sunt date</p>
-                            </div>
-                        </div>
-
-                        <div class="report-card">
-                            <h4>🎯 Top Servicii</h4>
-                            <div id="accountingTopServices">
-                                <p class="empty-state">Nu sunt date</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB: Add Transactions -->
-                <div id="acc-tab-forms" class="acc-tab-content">
-                    <div class="forms-grid">
-                        <!-- Add Income -->
-                        <div class="form-card">
-                            <h4>➕ Adaugă Venit</h4>
-                            <form id="accIncomeForm">
-                                <div class="form-group">
-                                    <label>Data</label>
-                                    <input type="date" id="incomeDate" class="input-form" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Oră</label>
-                                    <input type="time" id="incomeTime" class="input-form" value="12:00">
-                                </div>
-                                <div class="form-group">
-                                    <label>Sumă (RON)</label>
-                                    <input type="number" id="incomeAmount" class="input-form" min="0" step="0.01" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Serviciu</label>
-                                    <input type="text" id="incomeService" class="input-form" placeholder="ex: Tuns" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Clientă (opțional)</label>
-                                    <select id="incomeClient" class="input-form">
-                                        <option value="">-- Nicio clientă --</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Metodă Plată</label>
-                                    <select id="incomeMethod" class="input-form">
-                                        <option value="cash">Numerar</option>
-                                        <option value="card">Card</option>
-                                        <option value="transfer">Transfer</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Notă</label>
-                                    <textarea id="incomeNote" class="input-form" placeholder="Optional..."></textarea>
-                                </div>
-                                <button type="button" class="btn btn-primary btn-block" onclick="App.saveIncome()">Salvează Venit</button>
-                            </form>
-                        </div>
-
-                        <!-- Add Expense -->
-                        <div class="form-card">
-                            <h4>➖ Adaugă Cheltuiala</h4>
-                            <form id="accExpenseForm">
-                                <div class="form-group">
-                                    <label>Data</label>
-                                    <input type="date" id="expenseDate" class="input-form" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Oră</label>
-                                    <input type="time" id="expenseTime" class="input-form" value="12:00">
-                                </div>
-                                <div class="form-group">
-                                    <label>Sumă (RON)</label>
-                                    <input type="number" id="expenseAmount" class="input-form" min="0" step="0.01" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Categorie *</label>
-                                    <select id="expenseCategory" class="input-form" required>
-                                        <option value="">-- Selectează --</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Metodă Plată</label>
-                                    <select id="expenseMethod" class="input-form">
-                                        <option value="cash">Numerar</option>
-                                        <option value="card">Card</option>
-                                        <option value="transfer">Transfer</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Notă</label>
-                                    <textarea id="expenseNote" class="input-form" placeholder="Descriere cheltuielii..."></textarea>
-                                </div>
-                                <button type="button" class="btn btn-primary btn-block" onclick="App.saveExpenseAccounting()">Salvează Cheltuiala</button>
-                            </form>
-                        </div>
-
-                        <!-- Add Category -->
-                        <div class="form-card">
-                            <h4>🏷️ Categorie Nouă</h4>
-                            <form id="addCategoryForm">
-                                <div class="form-group">
-                                    <label>Tip</label>
-                                    <select id="newCategoryType" class="input-form">
-                                        <option value="expense">Cheltuiala</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Nume</label>
-                                    <input type="text" id="newCategoryName" class="input-form" placeholder="ex: Produse" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Culoare</label>
-                                    <input type="color" id="newCategoryColor" class="input-form" value="#9D4EDD">
-                                </div>
-                                <button type="button" class="btn btn-primary btn-block" onclick="App.saveCategory()">Creează Categorie</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                            <div id="dailyProfitSummary" class="daily-summary-table">
+                                <p class="empty-state">Nu există tranzacții pentru perioada selectată</p>
                             </div>
                         </div>
 

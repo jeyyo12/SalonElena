@@ -1,511 +1,444 @@
 /**
- * Accounting Module - Professional Financial Management
- * Single source of truth: localStorage("transactions")
- * Normalized transaction model with full audit trail
+ * Accounting Module - Solid transaction logic, reporting, and analysis
+ * Single Source of Truth: localStorage("transactions")
  */
 
 const Accounting = {
-    transactions: [],
-    categories: [],
+    // Transaction model normalization
+    TRANSACTION_DEFAULTS: {
+        currency: 'RON',
+        status: 'confirmed'
+    },
 
     /**
      * Initialize accounting module
      */
     init() {
-        this.loadTransactions();
-        this.loadCategories();
-        this.initDefaultCategories();
-        Logger.log('[ACCOUNTING] Module initialized');
+        this.normalizeTransactions();
     },
 
     /**
-     * Load transactions from localStorage (SINGLE SOURCE OF TRUTH)
+     * Normalize all transactions to standard model
+     * - Ensures all required fields exist
+     * - Converts old format to new format
      */
-    loadTransactions() {
-        try {
-            const data = localStorage.getItem('transactions');
-            this.transactions = data ? JSON.parse(data) : [];
-            Logger.log(`[ACCOUNTING] Loaded ${this.transactions.length} transactions`);
-        } catch (error) {
-            Logger.error('[ACCOUNTING] Failed to load transactions:', error);
-            this.transactions = [];
+    normalizeTransactions() {
+        const transactions = Storage.load(Storage.KEYS.TRANSACTIONS, []);
+        let modified = false;
+
+        const normalized = transactions.map(tx => {
+            const normalized = {
+                id: tx.id || `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                type: tx.type || 'expense', // income | expense
+                status: tx.status || 'confirmed', // confirmed | void
+                dateTime: tx.dateTime || tx.date || new Date().toISOString(),
+                amount: parseFloat(tx.amount) || 0,
+                currency: tx.currency || 'RON',
+                category: tx.category || tx.categoryId || 'General',
+                paymentMethod: tx.paymentMethod || tx.method || 'cash', // cash | card | transfer
+                note: tx.note || tx.description || '',
+                
+                // Optional fields
+                clientId: tx.clientId || null,
+                serviceName: tx.serviceName || null,
+                appointmentId: tx.appointmentId || null,
+                
+                // Audit fields
+                createdAt: tx.createdAt || new Date().toISOString(),
+                updatedAt: tx.updatedAt || new Date().toISOString(),
+                source: tx.source || 'manual', // manual | appointment | recurring
+                sourceId: tx.sourceId || null // for dedup
+            };
+
+            // Mark if something changed
+            if (JSON.stringify(tx) !== JSON.stringify(normalized)) {
+                modified = true;
+            }
+
+            return normalized;
+        });
+
+        if (modified) {
+            Storage.save(Storage.KEYS.TRANSACTIONS, normalized);
         }
+
+        return normalized;
     },
 
     /**
-     * Save transactions to localStorage
-     */
-    saveTransactions() {
-        try {
-            localStorage.setItem('transactions', JSON.stringify(this.transactions));
-        } catch (error) {
-            Logger.error('[ACCOUNTING] Failed to save transactions:', error);
-        }
-    },
-
-    /**
-     * Load categories from localStorage
-     */
-    loadCategories() {
-        try {
-            const data = localStorage.getItem('categories');
-            this.categories = data ? JSON.parse(data) : [];
-        } catch (error) {
-            Logger.error('[ACCOUNTING] Failed to load categories:', error);
-            this.categories = [];
-        }
-    },
-
-    /**
-     * Save categories to localStorage
-     */
-    saveCategories() {
-        try {
-            localStorage.setItem('categories', JSON.stringify(this.categories));
-        } catch (error) {
-            Logger.error('[ACCOUNTING] Failed to save categories:', error);
-        }
-    },
-
-    /**
-     * Initialize default categories if empty
-     */
-    initDefaultCategories() {
-        if (this.categories.length > 0) return;
-
-        const defaultCategories = [
-            // Expense Categories
-            { id: `cat-prod`, type: 'expense', name: 'Produse', color: '#2EE59D' },
-            { id: `cat-cons`, type: 'expense', name: 'Consumabile', color: '#F7C948' },
-            { id: `cat-rent`, type: 'expense', name: 'Chirie', color: '#FF5C7A' },
-            { id: `cat-util`, type: 'expense', name: 'Utilități', color: '#00D9FF' },
-            { id: `cat-mkt`, type: 'expense', name: 'Marketing', color: '#FF006E' },
-            { id: `cat-trans`, type: 'expense', name: 'Transport', color: '#8338EC' },
-            { id: `cat-other`, type: 'expense', name: 'Diverse', color: '#FFBE0B' }
-        ];
-
-        this.categories = defaultCategories;
-        this.saveCategories();
-    },
-
-    /**
-     * Normalize transaction to standard model
-     */
-    normalizeTransaction(tx) {
-        if (!tx.id) {
-            tx.id = `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        }
-        if (!tx.type) tx.type = 'expense';
-        if (!tx.status) tx.status = 'confirmed';
-        if (!tx.currency) tx.currency = 'RON';
-        if (!tx.paymentMethod) tx.paymentMethod = 'cash';
-        if (!tx.amount) tx.amount = 0;
-        if (!tx.note) tx.note = '';
-        if (!tx.createdAt) tx.createdAt = new Date().toISOString();
-        if (!tx.updatedAt) tx.updatedAt = new Date().toISOString();
-
-        return tx;
-    },
-
-    /**
-     * Add transaction with deduplication
+     * Add transaction with dedup prevention
      */
     addTransaction(txData) {
-        // Normalize
-        const tx = this.normalizeTransaction({ ...txData });
+        const transactions = Storage.load(Storage.KEYS.TRANSACTIONS, []);
 
-        // Prevent duplicate - check sourceId or appointmentId
-        if (tx.sourceId) {
-            const exists = this.transactions.find(t => t.sourceId === tx.sourceId && t.type === tx.type);
+        // Check for duplicate
+        if (txData.sourceId) {
+            const exists = transactions.find(t => t.sourceId === txData.sourceId && t.status === 'confirmed');
             if (exists) {
-                Logger.warn('[ACCOUNTING] Transaction with sourceId already exists:', tx.sourceId);
-                return { error: 'Transaction already exists', duplicate: exists };
+                Logger.warn(`[ACCOUNTING] Duplicate transaction prevented: ${txData.sourceId}`);
+                return exists;
             }
         }
 
-        if (tx.appointmentId) {
-            const exists = this.transactions.find(
-                t => t.appointmentId === tx.appointmentId && t.type === tx.type && t.status === 'confirmed'
-            );
-            if (exists) {
-                Logger.warn('[ACCOUNTING] Income already exists for appointment:', tx.appointmentId);
-                return { warning: 'Income already recorded for this appointment', duplicate: exists };
-            }
-        }
+        // Create normalized transaction
+        const tx = {
+            id: txData.id || `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: txData.type || 'expense',
+            status: txData.status || 'confirmed',
+            dateTime: txData.dateTime || txData.date || new Date().toISOString(),
+            amount: parseFloat(txData.amount) || 0,
+            currency: txData.currency || 'RON',
+            category: txData.category || 'General',
+            paymentMethod: txData.paymentMethod || 'cash',
+            note: txData.note || txData.description || '',
+            clientId: txData.clientId || null,
+            serviceName: txData.serviceName || null,
+            appointmentId: txData.appointmentId || null,
+            createdAt: txData.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            source: txData.source || 'manual',
+            sourceId: txData.sourceId || null
+        };
 
-        this.transactions.push(tx);
-        this.saveTransactions();
-        Logger.log(`[ACCOUNTING] Added ${tx.type} transaction: ${tx.amount} RON`);
+        transactions.push(tx);
+        Storage.save(Storage.KEYS.TRANSACTIONS, transactions);
+        Logger.log(`[ACCOUNTING] Transaction added: ${tx.id} (${tx.type} ${tx.amount} RON)`);
+
         return tx;
+    },
+
+    /**
+     * Delete transaction (mark as void for audit trail)
+     */
+    deleteTransaction(txId) {
+        const transactions = Storage.load(Storage.KEYS.TRANSACTIONS, []);
+        const tx = transactions.find(t => t.id === txId);
+
+        if (!tx) return false;
+
+        // Mark as void instead of deleting
+        tx.status = 'void';
+        tx.updatedAt = new Date().toISOString();
+
+        Storage.save(Storage.KEYS.TRANSACTIONS, transactions);
+        Logger.log(`[ACCOUNTING] Transaction voided: ${txId}`);
+
+        return true;
     },
 
     /**
      * Update transaction
      */
-    updateTransaction(txId, patch) {
-        const tx = this.transactions.find(t => t.id === txId);
-        if (!tx) return { error: 'Transaction not found' };
+    updateTransaction(txId, updates) {
+        const transactions = Storage.load(Storage.KEYS.TRANSACTIONS, []);
+        const tx = transactions.find(t => t.id === txId);
 
-        Object.assign(tx, patch, { updatedAt: new Date().toISOString() });
-        this.saveTransactions();
-        Logger.log('[ACCOUNTING] Updated transaction:', txId);
+        if (!tx) return null;
+
+        Object.assign(tx, updates, { updatedAt: new Date().toISOString() });
+        Storage.save(Storage.KEYS.TRANSACTIONS, transactions);
+        Logger.log(`[ACCOUNTING] Transaction updated: ${txId}`);
+
         return tx;
     },
 
     /**
-     * Delete transaction
+     * Get all confirmed transactions
      */
-    deleteTransaction(txId) {
-        const index = this.transactions.findIndex(t => t.id === txId);
-        if (index === -1) return { error: 'Transaction not found' };
-
-        this.transactions.splice(index, 1);
-        this.saveTransactions();
-        Logger.log('[ACCOUNTING] Deleted transaction:', txId);
-        return { success: true };
+    getConfirmedTransactions() {
+        const transactions = Storage.load(Storage.KEYS.TRANSACTIONS, []);
+        return transactions.filter(t => t.status === 'confirmed');
     },
 
     /**
-     * Get transactions with advanced filtering
-     * Includes only status="confirmed" by default
+     * Get transactions by date range with timezone-safe boundaries
+     * @param {Date|string} startDate - Start date (inclusive 00:00:00)
+     * @param {Date|string} endDate - End date (inclusive 23:59:59)
      */
-    getFilteredTransactions(filters = {}) {
-        let result = [...this.transactions];
+    getByDateRange(startDate, endDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const startTime = start.getTime();
 
-        // Status filter - default: confirmed only
-        if (filters.status && filters.status !== 'all') {
-            result = result.filter(t => t.status === filters.status);
-        } else {
-            result = result.filter(t => t.status === 'confirmed');
-        }
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        const endTime = end.getTime();
 
-        // Type filter
+        const transactions = this.getConfirmedTransactions();
+        return transactions.filter(t => {
+            const txTime = new Date(t.dateTime).getTime();
+            return txTime >= startTime && txTime <= endTime;
+        });
+    },
+
+    /**
+     * Get summary for date range
+     * Returns: totalIncome, totalExpense, profitNet, byPaymentMethod, byCategory
+     */
+    getSummaryForRange(startDate, endDate) {
+        const txs = this.getByDateRange(startDate, endDate);
+
+        const summary = {
+            totalIncome: 0,
+            totalExpense: 0,
+            profitNet: 0,
+            transactionCount: txs.length,
+            paymentMethods: {
+                cash: 0,
+                card: 0,
+                transfer: 0
+            },
+            byCategory: {},
+            byDay: {},
+            transactions: txs
+        };
+
+        txs.forEach(tx => {
+            if (tx.type === 'income') {
+                summary.totalIncome += tx.amount;
+            } else if (tx.type === 'expense') {
+                summary.totalExpense += tx.amount;
+
+                // Category breakdown
+                const cat = tx.category || 'Uncategorized';
+                if (!summary.byCategory[cat]) {
+                    summary.byCategory[cat] = 0;
+                }
+                summary.byCategory[cat] += tx.amount;
+            }
+
+            // Payment method totals
+            if (tx.paymentMethod && summary.paymentMethods[tx.paymentMethod] !== undefined) {
+                summary.paymentMethods[tx.paymentMethod] += tx.amount;
+            }
+
+            // Daily breakdown
+            const day = tx.dateTime.split('T')[0];
+            if (!summary.byDay[day]) {
+                summary.byDay[day] = { income: 0, expense: 0 };
+            }
+            if (tx.type === 'income') {
+                summary.byDay[day].income += tx.amount;
+            } else {
+                summary.byDay[day].expense += tx.amount;
+            }
+        });
+
+        summary.profitNet = summary.totalIncome - summary.totalExpense;
+
+        return summary;
+    },
+
+    /**
+     * Filter transactions by criteria
+     */
+    filterTransactions(transactions, filters = {}) {
+        let result = [...transactions];
+
+        // By type
         if (filters.type && filters.type !== 'all') {
             result = result.filter(t => t.type === filters.type);
         }
 
-        // Date range (timezone-safe: 00:00 to 23:59:59)
-        if (filters.dateFrom) {
-            const start = new Date(filters.dateFrom);
-            start.setHours(0, 0, 0, 0);
-            result = result.filter(t => {
-                const txDateTime = new Date(`${t.date}T${t.time || '00:00'}:00`);
-                return txDateTime >= start;
-            });
+        // By status
+        if (filters.status && filters.status !== 'all') {
+            result = result.filter(t => t.status === filters.status);
         }
 
-        if (filters.dateTo) {
-            const end = new Date(filters.dateTo);
-            end.setHours(23, 59, 59, 999);
-            result = result.filter(t => {
-                const txDateTime = new Date(`${t.date}T${t.time || '00:00'}:00`);
-                return txDateTime <= end;
-            });
+        // By payment method
+        if (filters.paymentMethods && filters.paymentMethods.length > 0) {
+            result = result.filter(t => filters.paymentMethods.includes(t.paymentMethod));
         }
 
-        // Payment method filter
-        const paymentMethods = filters.paymentMethods || [];
-        if (paymentMethods.length > 0) {
-            result = result.filter(t => paymentMethods.includes(t.paymentMethod));
+        // By category
+        if (filters.categories && filters.categories.length > 0) {
+            result = result.filter(t => filters.categories.includes(t.category));
         }
 
-        // Category filter (for expenses)
-        const categories = filters.categories || [];
-        if (categories.length > 0) {
-            result = result.filter(t => categories.includes(t.categoryId));
-        }
-
-        // Search in note, client name, service name
-        if (filters.search) {
+        // By search term (note, client, service)
+        if (filters.search && filters.search.trim()) {
             const term = filters.search.toLowerCase();
-            result = result.filter(t => {
-                const client = t.clientId && typeof Clients !== 'undefined' 
-                    ? (Clients.getById(t.clientId)?.name || '').toLowerCase() 
-                    : '';
-                const note = (t.note || '').toLowerCase();
-                const service = (t.serviceName || '').toLowerCase();
-                return client.includes(term) || note.includes(term) || service.includes(term);
-            });
+            result = result.filter(t =>
+                (t.note && t.note.toLowerCase().includes(term)) ||
+                (t.serviceName && t.serviceName.toLowerCase().includes(term)) ||
+                (t.clientId && t.clientId.toLowerCase().includes(term))
+            );
         }
 
-        // Sort by date descending
-        result.sort((a, b) => {
-            const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
-            const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
-            return dateB - dateA;
-        });
+        // Sort by dateTime descending
+        result.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
 
         return result;
     },
 
     /**
-     * Get summary for date range with filters
-     * SINGLE SOURCE OF TRUTH: Only counts confirmed transactions
+     * Get transactions for specific period with filters applied
      */
-    getRangeSummary(filters = {}) {
-        const txs = this.getFilteredTransactions(filters);
-
-        // Calculate totals - ONLY confirmed
-        const incomeTotal = txs
-            .filter(t => t.type === 'income')
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-        const expenseTotal = txs
-            .filter(t => t.type === 'expense')
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-        const profit = incomeTotal - expenseTotal;
-
-        // Payment method totals
-        const cashTotal = txs
-            .filter(t => t.paymentMethod === 'cash')
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-        const cardTotal = txs
-            .filter(t => t.paymentMethod === 'card')
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-        const transferTotal = txs
-            .filter(t => t.paymentMethod === 'transfer')
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-        // Unique clients served
-        const clientsSet = new Set();
-        txs.forEach(t => {
-            if (t.type === 'income' && t.clientId) {
-                clientsSet.add(t.clientId);
-            }
-        });
-
-        return {
-            incomeTotal: parseFloat(incomeTotal.toFixed(2)),
-            expenseTotal: parseFloat(expenseTotal.toFixed(2)),
-            profit: parseFloat(profit.toFixed(2)),
-            txCount: txs.length,
-            clientsServed: clientsSet.size,
-            cashTotal: parseFloat(cashTotal.toFixed(2)),
-            cardTotal: parseFloat(cardTotal.toFixed(2)),
-            transferTotal: parseFloat(transferTotal.toFixed(2)),
-            transactions: txs
-        };
+    getFiltered(startDate, endDate, filters = {}) {
+        const txs = this.getByDateRange(startDate, endDate);
+        return this.filterTransactions(txs, filters);
     },
 
     /**
-     * Group transactions by day for reporting
+     * Get daily breakdown for chart/reporting
      */
-    groupByDay(transactions) {
-        const grouped = {};
+    getDailyBreakdown(startDate, endDate) {
+        const summary = this.getSummaryForRange(startDate, endDate);
+        const days = Object.keys(summary.byDay).sort();
 
-        transactions.forEach(tx => {
-            if (!grouped[tx.date]) {
-                grouped[tx.date] = {
-                    date: tx.date,
-                    income: 0,
-                    expenses: 0,
-                    transactions: []
-                };
-            }
-
-            if (tx.type === 'income') {
-                grouped[tx.date].income += tx.amount;
-            } else if (tx.type === 'expense') {
-                grouped[tx.date].expenses += tx.amount;
-            }
-
-            grouped[tx.date].transactions.push(tx);
-        });
-
-        return Object.values(grouped)
-            .map(day => ({
-                date: day.date,
-                income: parseFloat(day.income.toFixed(2)),
-                expenses: parseFloat(day.expenses.toFixed(2)),
-                profit: parseFloat((day.income - day.expenses).toFixed(2)),
-                txCount: day.transactions.length,
-                transactions: day.transactions
-            }))
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
+        return days.map(day => ({
+            date: day,
+            income: summary.byDay[day].income,
+            expense: summary.byDay[day].expense,
+            profit: summary.byDay[day].income - summary.byDay[day].expense
+        }));
     },
 
     /**
      * Get top expense categories
      */
-    getTopExpenseCategories(transactions, limit = 5) {
-        const categoryMap = {};
+    getTopExpenseCategories(startDate, endDate, limit = 5) {
+        const summary = this.getSummaryForRange(startDate, endDate);
 
-        transactions
-            .filter(t => t.type === 'expense')
-            .forEach(t => {
-                if (!categoryMap[t.categoryId]) {
-                    categoryMap[t.categoryId] = 0;
-                }
-                categoryMap[t.categoryId] += t.amount;
-            });
-
-        return Object.entries(categoryMap)
-            .map(([catId, amount]) => ({
-                categoryId: catId,
-                categoryName: this.getCategory(catId)?.name || 'Unknown',
-                amount: parseFloat(amount.toFixed(2))
-            }))
+        return Object.entries(summary.byCategory)
+            .map(([category, amount]) => ({ category, amount }))
             .sort((a, b) => b.amount - a.amount)
             .slice(0, limit);
     },
 
     /**
-     * Get top services by income
+     * Get income by service
      */
-    getTopServices(transactions, limit = 5) {
-        const serviceMap = {};
+    getTopServices(startDate, endDate, limit = 5) {
+        const txs = this.getByDateRange(startDate, endDate);
+        const incomeByService = {};
 
-        transactions
-            .filter(t => t.type === 'income' && t.serviceName)
-            .forEach(t => {
-                if (!serviceMap[t.serviceName]) {
-                    serviceMap[t.serviceName] = 0;
-                }
-                serviceMap[t.serviceName] += t.amount;
-            });
-
-        return Object.entries(serviceMap)
-            .map(([name, amount]) => ({ serviceName: name, amount: parseFloat(amount.toFixed(2)) }))
-            .sort((a, b) => b.amount - a.amount)
-            .slice(0, limit);
-    },
-
-    /**
-     * Get category by ID
-     */
-    getCategory(categoryId) {
-        return this.categories.find(c => c.id === categoryId);
-    },
-
-    /**
-     * Add category
-     */
-    addCategory(name, type, color) {
-        const category = {
-            id: `cat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type,
-            name,
-            color
-        };
-        this.categories.push(category);
-        this.saveCategories();
-        Logger.log(`[ACCOUNTING] Added category: ${name}`);
-        return category;
-    },
-
-    /**
-     * Delete category
-     */
-    deleteCategory(categoryId) {
-        const index = this.categories.findIndex(c => c.id === categoryId);
-        if (index === -1) return { error: 'Category not found' };
-
-        // Don't allow deletion if expenses use this category
-        const usageCount = this.transactions.filter(t => t.categoryId === categoryId).length;
-        if (usageCount > 0) {
-            return { error: `Category used by ${usageCount} transactions` };
-        }
-
-        this.categories.splice(index, 1);
-        this.saveCategories();
-        Logger.log('[ACCOUNTING] Deleted category:', categoryId);
-        return { success: true };
-    },
-
-    /**
-     * Export transactions to CSV
-     */
-    exportCsv(transactions, filename = 'accounting.csv') {
-        const headers = ['Data', 'Oră', 'Tip', 'Descriere', 'Categorie', 'Metodă Plată', 'Suma (RON)', 'Status'];
-        const rows = [];
-
-        transactions.forEach(tx => {
-            const client = tx.clientId && typeof Clients !== 'undefined' ? Clients.getById(tx.clientId)?.name : '';
-            const description = `${client} ${tx.serviceName || tx.note}`.trim();
-            const category = this.getCategory(tx.categoryId)?.name || '-';
-            const type = tx.type === 'income' ? 'VENIT' : 'CHELTUIALA';
-            const amount = tx.amount.toFixed(2).replace('.', ',');
-
-            rows.push([
-                tx.date,
-                tx.time,
-                type,
-                `"${description}"`,
-                category,
-                tx.paymentMethod,
-                amount,
-                tx.status
-            ]);
+        txs.filter(t => t.type === 'income').forEach(tx => {
+            const service = tx.serviceName || 'Other';
+            if (!incomeByService[service]) {
+                incomeByService[service] = 0;
+            }
+            incomeByService[service] += tx.amount;
         });
 
-        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        return Object.entries(incomeByService)
+            .map(([service, amount]) => ({ service, amount }))
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, limit);
+    },
+
+    /**
+     * Get all categories used
+     */
+    getAllCategories() {
+        const transactions = this.getConfirmedTransactions();
+        const categories = new Set();
+
+        transactions.forEach(tx => {
+            if (tx.category) {
+                categories.add(tx.category);
+            }
+        });
+
+        return Array.from(categories).sort();
+    },
+
+    /**
+     * Export to CSV
+     */
+    exportToCSV(transactions, filename = 'accounting-report.csv') {
+        if (transactions.length === 0) {
+            UI.showToast('Nu sunt tranzacții pentru export', 'warning');
+            return;
+        }
+
+        // CSV header
+        const headers = ['Data', 'Tip', 'Sumă', 'Categorie', 'Metoda Plată', 'Status', 'Notă', 'Client/Serviciu'];
+        const rows = transactions.map(tx => [
+            tx.dateTime.substring(0, 10),
+            tx.type === 'income' ? 'Venit' : 'Cheltuiala',
+            tx.amount.toFixed(2),
+            tx.category || '-',
+            this._formatPaymentMethod(tx.paymentMethod),
+            tx.status,
+            `"${tx.note.replace(/"/g, '""')}"`,
+            tx.clientId ? `Client: ${tx.clientId}` : (tx.serviceName ? `Service: ${tx.serviceName}` : '-')
+        ]);
+
+        // Build CSV
+        let csv = headers.join(',') + '\n';
+        rows.forEach(row => {
+            csv += row.map(cell => {
+                if (typeof cell === 'string' && cell.includes(',')) {
+                    return `"${cell.replace(/"/g, '""')}"`;
+                }
+                return cell;
+            }).join(',') + '\n';
+        });
+
+        // Download
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = filename;
-        link.style.display = 'none';
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+
+        Logger.log(`[ACCOUNTING] Exported ${transactions.length} transactions to ${filename}`);
+        UI.showToast(`Export realizat: ${transactions.length} tranzacții`, 'success');
     },
 
     /**
-     * Auto-sync: Sync income from completed appointments
+     * Sync income from completed appointments
      */
     syncIncomeFromAppointments() {
-        try {
-            const appointments = Storage.load(Storage.KEYS.APPOINTMENTS, []);
-            let syncCount = 0;
+        const appointments = Appointments.getAll();
+        const txs = this.getConfirmedTransactions();
 
-            appointments.forEach(appt => {
-                if (appt.status !== 'completed') return;
+        appointments.forEach(appt => {
+            if (appt.status === 'completed' && !appt.isVoid) {
+                // Check if already synced
+                const exists = txs.find(t => t.appointmentId === appt.id && t.source === 'appointment');
+                if (exists) return;
 
-                // Check if income already exists for this appointment
-                const existingIncome = this.transactions.find(
-                    t => t.appointmentId === appt.id && t.type === 'income' && t.status === 'confirmed'
-                );
-                if (existingIncome) return;
+                // Get service price
+                const service = Services.getById(appt.serviceId);
+                if (!service) return;
 
                 // Create income transaction
-                const incomeTransaction = {
+                this.addTransaction({
                     type: 'income',
-                    date: appt.date || new Date().toISOString().split('T')[0],
-                    time: appt.time || '12:00',
-                    amount: parseFloat(appt.price) || 0,
+                    dateTime: appt.date,
+                    amount: service.price,
+                    category: 'Services',
+                    paymentMethod: 'cash',
+                    serviceName: service.name,
                     clientId: appt.clientId,
-                    serviceName: appt.serviceName || 'Serviciu',
                     appointmentId: appt.id,
-                    paymentMethod: appt.paymentMethod || 'cash',
-                    note: `Auto-sync din programare: ${appt.serviceName || 'Serviciu'}`,
-                    status: 'confirmed'
-                };
-
-                this.addTransaction(incomeTransaction);
-                syncCount++;
-            });
-
-            if (syncCount > 0) {
-                Logger.log(`[ACCOUNTING] Auto-synced ${syncCount} income from appointments`);
+                    source: 'appointment',
+                    sourceId: `appt-${appt.id}`
+                });
             }
-        } catch (error) {
-            Logger.error('[ACCOUNTING] Error in syncIncomeFromAppointments:', error);
-        }
+        });
+
+        Logger.log('[ACCOUNTING] Sync completed appointments to income');
     },
 
     /**
-     * Full accounting sync
+     * Helper: format payment method
      */
-    fullSync() {
-        Logger.log('[ACCOUNTING] === FULL SYNC START ===');
-        this.syncIncomeFromAppointments();
-        Logger.log('[ACCOUNTING] === FULL SYNC COMPLETE ===');
+    _formatPaymentMethod(method) {
+        const map = {
+            'cash': 'Numerar',
+            'card': 'Card',
+            'transfer': 'Transfer'
+        };
+        return map[method] || method;
     }
 };
 
-// Initialize accounting module
+// Auto-initialize
 Accounting.init();

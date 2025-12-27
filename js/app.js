@@ -1269,12 +1269,20 @@ const App = {
      * ==================== ACCOUNTING TAB ====================
      */
     setupAccounting() {
-        // Full sync on setup
-        Accounting.fullSync();
+        Logger.log('[ACCOUNTING] Setting up accounting tab');
 
-        // Date filters
+        // Date filters - auto-update
         const dateStartInput = document.getElementById('accDateStart');
         const dateEndInput = document.getElementById('accDateEnd');
+        
+        // Set default date range (last 30 days)
+        if (dateStartInput && !dateStartInput.value) {
+            const end = new Date();
+            const start = new Date(end);
+            start.setDate(start.getDate() - 30);
+            dateStartInput.value = start.toISOString().split('T')[0];
+            dateEndInput.value = end.toISOString().split('T')[0];
+        }
         
         if (dateStartInput) {
             dateStartInput.addEventListener('change', () => {
@@ -1356,61 +1364,6 @@ const App = {
             });
         });
 
-        // Income form
-        const incomeForm = document.getElementById('accIncomeForm');
-        if (incomeForm) {
-            incomeForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveIncome();
-            });
-        }
-
-        // Expense form
-        const expenseForm = document.getElementById('accExpenseForm');
-        if (expenseForm) {
-            expenseForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveExpenseAccounting();
-            });
-        }
-
-        // Add category buttons
-        const btnAddIncomeCategory = document.getElementById('btnAddIncomeCategory');
-        if (btnAddIncomeCategory) {
-            btnAddIncomeCategory.addEventListener('click', () => {
-                document.getElementById('newCategoryType').value = 'income';
-                document.getElementById('addCategoryForm').style.display = 'block';
-                document.getElementById('newCategoryName').focus();
-            });
-        }
-
-        const btnAddExpenseCategory = document.getElementById('btnAddExpenseCategory');
-        if (btnAddExpenseCategory) {
-            btnAddExpenseCategory.addEventListener('click', () => {
-                document.getElementById('newCategoryType').value = 'expense';
-                document.getElementById('addCategoryForm').style.display = 'block';
-                document.getElementById('newCategoryName').focus();
-            });
-        }
-
-        // Save category button
-        const btnSaveCategory = document.getElementById('btnSaveCategory');
-        if (btnSaveCategory) {
-            btnSaveCategory.addEventListener('click', () => {
-                this.saveCategory();
-            });
-        }
-
-        // Cancel category button
-        const btnCancelCategory = document.getElementById('btnCancelCategory');
-        if (btnCancelCategory) {
-            btnCancelCategory.addEventListener('click', () => {
-                document.getElementById('addCategoryForm').style.display = 'none';
-                document.getElementById('newCategoryName').value = '';
-                document.getElementById('newCategoryColor').value = '#9D4EDD';
-            });
-        }
-
         // Reset filters
         const resetFiltersBtn = document.getElementById('btnResetFilters');
         if (resetFiltersBtn) {
@@ -1421,12 +1374,16 @@ const App = {
                     type: 'all',
                     paymentMethods: [],
                     categories: [],
-                    status: 'all',
+                    status: 'confirmed',
                     search: ''
                 };
                 // Reset UI
-                document.querySelectorAll('#accounting .checkbox-group input[type="checkbox"]').forEach(cb => cb.checked = false);
-                document.querySelectorAll('#accounting .filter-group select').forEach(sel => sel.value = 'all');
+                if (dateStartInput) dateStartInput.value = '';
+                if (dateEndInput) dateEndInput.value = '';
+                if (typeSelect) typeSelect.value = 'all';
+                if (statusSelect) statusSelect.value = 'confirmed';
+                document.querySelectorAll('#accounting .checkbox-group-modern input[type="checkbox"].acc-payment-method').forEach(cb => cb.checked = false);
+                if (categorySelect) categorySelect.selectedIndex = 0;
                 if (searchInput) searchInput.value = '';
                 this.renderAccounting();
             });
@@ -1436,195 +1393,95 @@ const App = {
         const exportBtn = document.getElementById('btnExportAccounting');
         if (exportBtn) {
             exportBtn.addEventListener('click', () => {
+                const startDate = document.getElementById('accDateStart')?.value || new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
+                const endDate = document.getElementById('accDateEnd')?.value || new Date().toISOString().split('T')[0];
                 const filters = AppState.accountingFilters;
-                const txs = Accounting.getFilteredTransactions(filters);
-                const filename = `Contabilitate_${new Date().toISOString().split('T')[0]}.csv`;
-                Accounting.exportCsv(txs, filename);
-                UI.showToast('Export CSV realizat', 'success');
+                
+                const txs = Accounting.getFiltered(startDate, endDate, {
+                    type: filters.type,
+                    status: filters.status,
+                    paymentMethods: filters.paymentMethods,
+                    categories: filters.categories,
+                    search: filters.search
+                });
+                
+                const filename = `Contabilitate_${startDate}_to_${endDate}.csv`;
+                Accounting.exportToCSV(txs, filename);
             });
         }
-    },
-
-    setupCategoryDeleteButtons() {
-        document.querySelectorAll('.category-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const categoryId = btn.dataset.categoryId;
-                if (confirm('Ștergi categorie?')) {
-                    Accounting.deleteCategory(categoryId);
-                    this.renderAccounting();
-                    UI.showToast('Categorie ștearsă', 'success');
-                }
-            });
-        });
     },
 
     renderAccounting() {
         if (AppState.currentTab !== 'accounting') return;
 
-        // Get summary and data
-        const filters = AppState.accountingFilters;
-        const summary = Accounting.getRangeSummary(filters);
-        const txs = summary.transactions;
-        const dayGroups = Accounting.groupByDay(txs);
-        const topExpenses = Accounting.getTopExpenseCategories(txs, 5);
-        const topServices = Accounting.getTopServices(txs, 5);
+        Logger.log('[ACCOUNTING] Rendering accounting page');
+
+        // Get date range
+        const dateStartInput = document.getElementById('accDateStart');
+        const dateEndInput = document.getElementById('accDateEnd');
+        
+        const startDate = dateStartInput?.value || new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
+        const endDate = dateEndInput?.value || new Date().toISOString().split('T')[0];
+
+        // Build filters object
+        const filters = {
+            type: document.getElementById('accType')?.value || 'all',
+            status: document.getElementById('accStatus')?.value || 'confirmed',
+            paymentMethods: Array.from(document.querySelectorAll('#accounting .checkbox-group-modern input[type="checkbox"].acc-payment-method:checked')).map(cb => cb.value),
+            categories: Array.from(document.querySelectorAll('#accounting select#accCategories option:checked')).map(opt => opt.value).filter(v => v),
+            search: document.getElementById('accSearch')?.value || ''
+        };
+
+        // Get transactions
+        const txs = Accounting.getFiltered(startDate, endDate, filters);
+        const summary = Accounting.getSummaryForRange(startDate, endDate);
+
+        // Populate category select with all available categories
+        this.populateCategories();
 
         // Update KPI cards
-        DOM.setInner('accIncomeTotal', UI.formatCurrency(summary.incomeTotal));
-        DOM.setInner('accExpenseTotal', UI.formatCurrency(summary.expenseTotal));
-        const profitEl = DOM.get('accProfitTotal');
-        if (profitEl) {
-            profitEl.textContent = UI.formatCurrency(summary.profit);
-            profitEl.className = summary.profit >= 0 ? 'kpi-value kpi-profit' : 'kpi-value kpi-loss';
-        }
-        DOM.setInner('accCashTotal', UI.formatCurrency(summary.cashTotal));
-        DOM.setInner('accCardTotal', UI.formatCurrency(summary.cardTotal));
-        DOM.setInner('accTransferTotal', UI.formatCurrency(summary.transferTotal));
-        DOM.setInner('accTxCount', summary.txCount);
-        DOM.setInner('accClientsCount', summary.clientsServed);
+        const incomeCard = document.getElementById('accIncomeTotal');
+        if (incomeCard) incomeCard.textContent = UI.formatCurrency(summary.totalIncome);
 
-        // Render main sections
-        this.renderAccountingTransactions(txs);
-        this.renderAccountingDayBreakdown(dayGroups);
-        this.renderAccountingExpenseCategories(topExpenses);
-        this.renderAccountingServices(topServices);
-    },
+        const expenseCard = document.getElementById('accExpenseTotal');
+        if (expenseCard) expenseCard.textContent = UI.formatCurrency(summary.totalExpense);
 
-    /**
-     * Render list of transactions
-     */
-    renderAccountingTransactions(txs) {
-        const container = DOM.get('accountingTransactionsList');
-        if (!container) return;
-
-        if (txs.length === 0) {
-            container.innerHTML = '<p class="empty-state">Nicio tranzacție</p>';
-            return;
+        const profitCard = document.getElementById('accProfitTotal');
+        if (profitCard) {
+            profitCard.textContent = UI.formatCurrency(summary.profitNet);
+            profitCard.classList.toggle('danger', summary.profitNet < 0);
         }
 
-        container.innerHTML = txs.map(tx => {
-            const client = tx.clientId && typeof Clients !== 'undefined' ? Clients.getById(tx.clientId)?.name : '';
-            const category = tx.categoryId ? Accounting.getCategory(tx.categoryId)?.name : '-';
-            const desc = `${client} ${tx.serviceName || tx.note}`.trim() || '-';
-            const sign = tx.type === 'income' ? '+' : '-';
-            const typeLabel = tx.type === 'income' ? 'VENIT' : 'CHELTUIALA';
-            const typeClass = tx.type === 'income' ? 'tx-income' : 'tx-expense';
+        const cashCard = document.getElementById('accCashTotal');
+        if (cashCard) cashCard.textContent = UI.formatCurrency(summary.paymentMethods.cash);
 
-            return `
-                <div class="tx-row">
-                    <div class="tx-date">${tx.date}</div>
-                    <div class="tx-time">${tx.time}</div>
-                    <div class="tx-desc">${desc}</div>
-                    <div class="tx-category">${category}</div>
-                    <div class="tx-method">${tx.paymentMethod}</div>
-                    <div class="tx-amount ${typeClass}">${sign}${UI.formatCurrency(tx.amount)}</div>
-                    <div class="tx-type">${typeLabel}</div>
-                    <div class="tx-actions">
-                        <button class="btn-sm btn-danger" onclick="App.deleteTransaction('${tx.id}')">Șterge</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        const cardCard = document.getElementById('accCardTotal');
+        if (cardCard) cardCard.textContent = UI.formatCurrency(summary.paymentMethods.card);
+
+        const transferCard = document.getElementById('accTransferTotal');
+        if (transferCard) transferCard.textContent = UI.formatCurrency(summary.paymentMethods.transfer);
+
+        // Render transaction list
+        this.renderAccountingTransactionList(txs);
+
+        // Render reports
+        this.renderAccountingReports(startDate, endDate, summary);
     },
 
-    /**
-     * Render day breakdown report
-     */
-    renderAccountingDayBreakdown(dayGroups) {
-        const container = DOM.get('accountingDayBreakdown');
-        if (!container || dayGroups.length === 0) return;
+    populateCategories() {
+        const categorySelect = document.getElementById('accCategories');
+        if (!categorySelect) return;
 
-        let html = '<div class="report-table"><div class="report-header">';
-        html += '<div>Data</div><div>Venituri</div><div>Cheltuieli</div><div>Profit</div>';
-        html += '</div>';
+        const allCategories = Accounting.getAllCategories();
+        const currentValues = Array.from(categorySelect.selectedOptions).map(opt => opt.value);
 
-        dayGroups.forEach(day => {
-            const profitClass = day.profit >= 0 ? 'profit-positive' : 'profit-negative';
-            html += `<div class="report-row">
-                <div>${day.date}</div>
-                <div class="amount-income">+${UI.formatCurrency(day.income)}</div>
-                <div class="amount-expense">-${UI.formatCurrency(day.expenses)}</div>
-                <div class="amount-profit ${profitClass}">${day.profit >= 0 ? '+' : ''}${UI.formatCurrency(day.profit)}</div>
-            </div>`;
-        });
-
-        html += '</div>';
-        container.innerHTML = html;
-    },
-
-    /**
-     * Render top expense categories
-     */
-    renderAccountingExpenseCategories(topExpenses) {
-        const container = DOM.get('accountingTopExpenses');
-        if (!container) return;
-
-        if (topExpenses.length === 0) {
-            container.innerHTML = '<p class="empty-state">Nu există cheltuieli</p>';
-            return;
-        }
-
-        container.innerHTML = topExpenses.map(item => {
-            const cat = Accounting.getCategory(item.categoryId);
-            const color = cat?.color || '#9D4EDD';
-            return `
-                <div class="report-item">
-                    <div class="item-color" style="background-color: ${color};"></div>
-                    <div class="item-name">${item.categoryName}</div>
-                    <div class="item-amount">-${UI.formatCurrency(item.amount)}</div>
-                </div>
-            `;
-        }).join('');
-    },
-
-    /**
-     * Render top services
-     */
-    renderAccountingServices(topServices) {
-        const container = DOM.get('accountingTopServices');
-        if (!container) return;
-
-        if (topServices.length === 0) {
-            container.innerHTML = '<p class="empty-state">Nu există venituri</p>';
-            return;
-        }
-
-        container.innerHTML = topServices.map(item => `
-            <div class="report-item">
-                <div class="item-name">${item.serviceName}</div>
-                <div class="item-amount income">+${UI.formatCurrency(item.amount)}</div>
-            </div>
-        `).join('');
-    },
-
-    populateExpenseCategorySelect() {
-        const expenseCategorySelect = document.getElementById('expenseCategory');
-        if (!expenseCategorySelect) return;
-
-        const expenseCategories = Accounting.loadCategories().filter(c => c.type === 'expense');
-        expenseCategorySelect.innerHTML = '<option value="">-- Selectează --</option>';
-        
-        expenseCategories.forEach(cat => {
+        categorySelect.innerHTML = '<option value="">-- Toate --</option>';
+        allCategories.forEach(cat => {
             const option = document.createElement('option');
-            option.value = cat.id;
-            option.textContent = cat.name;
-            expenseCategorySelect.appendChild(option);
-        });
-    },
-
-    populateModalExpenseCategorySelect() {
-        const modalCategorySelect = document.getElementById('modal-expenseCategory');
-        if (!modalCategorySelect) return;
-
-        const expenseCategories = Accounting.categories.filter(c => c.type === 'expense');
-        modalCategorySelect.innerHTML = '<option value="">-- Selectează --</option>';
-        
-        expenseCategories.forEach(cat => {
-            const option = document.createElement('option');
-            option.value = cat.id;
-            option.textContent = cat.name;
-            modalCategorySelect.appendChild(option);
+            option.value = cat;
+            option.textContent = cat;
+            option.selected = currentValues.includes(cat);
+            categorySelect.appendChild(option);
         });
     },
 
@@ -1638,108 +1495,92 @@ const App = {
         list.innerHTML = '';
 
         if (txs.length === 0) {
-            list.innerHTML = '<div style="color: var(--color-text-secondary); padding: var(--spacing-lg);">Nicio tranzacție</div>';
+            list.innerHTML = '<div class="empty-state">Nu sunt tranzacții pentru filtrele selectate</div>';
             return;
         }
 
         txs.forEach(tx => {
-            const category = Accounting.getCategory(tx.categoryId);
-            const categoryColor = category ? category.color : '#9D4EDD';
-            const categoryName = category ? category.name : 'Fără categorie';
-            
             const item = document.createElement('div');
-            item.className = 'accounting-tx-item';
+            item.className = `accounting-tx-item tx-${tx.type}`;
+            
+            const typeLabel = tx.type === 'income' ? 'Venit' : 'Cheltuiala';
+            const typeColor = tx.type === 'income' ? 'var(--color-success)' : 'var(--color-danger)';
+            const sign = tx.type === 'income' ? '+' : '-';
+
+            let description = tx.note;
+            if (tx.serviceName) description += ` (${tx.serviceName})`;
+
             item.innerHTML = `
-                <div class="acc-tx-date">${tx.date}</div>
-                <div class="acc-tx-desc">
-                    <div class="acc-tx-desc-title">${tx.serviceName || 'Tranzacție'}</div>
-                    <div class="acc-tx-desc-sub">${tx.note || ''}</div>
+                <div class="acc-tx-header">
+                    <div class="acc-tx-date">${tx.dateTime.substring(0, 10)}</div>
+                    <div class="acc-tx-time">${tx.dateTime.substring(11, 16)}</div>
+                    <div class="acc-tx-desc">
+                        <div class="acc-tx-label">${description || 'Fără descriere'}</div>
+                        <div class="acc-tx-meta">${tx.category || 'General'} • ${tx.paymentMethod}</div>
+                    </div>
                 </div>
-                <div class="acc-tx-category">
-                    <span class="acc-tx-category-badge" style="background-color: ${categoryColor}20; color: ${categoryColor};">${categoryName}</span>
-                </div>
-                <div class="acc-tx-method">${this.formatPaymentMethod(tx.paymentMethod)}</div>
-                <div class="acc-tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${UI.formatCurrency(tx.amount)}</div>
-                <div class="acc-tx-actions">
-                    <button class="btn-sm" onclick="App.editTransaction('${tx.id}')">Edit</button>
-                    <button class="btn-sm btn-danger" onclick="App.deleteTransaction('${tx.id}')">Șterge</button>
+                <div class="acc-tx-details">
+                    <span class="acc-tx-type" style="color: ${typeColor};">${typeLabel}</span>
+                    <span class="acc-tx-status">${tx.status}</span>
+                    <span class="acc-tx-amount" style="color: ${typeColor};">${sign}${UI.formatCurrency(tx.amount)}</span>
+                    <button class="btn-icon-delete" onclick="App.deleteTransaction('${tx.id}', event)" title="Șterge">×</button>
                 </div>
             `;
             list.appendChild(item);
         });
     },
 
-    renderAccountingCategories() {
-        const container = document.getElementById('acc-tab-categories');
-        if (!container) return;
-
-        const incomeCategories = Accounting.loadCategories().filter(c => c.type === 'income');
-        const expenseCategories = Accounting.loadCategories().filter(c => c.type === 'expense');
-
-        // Populate income categories list
-        const incomeList = document.getElementById('incomeCategories');
-        if (incomeList) {
-            incomeList.innerHTML = '';
-            incomeCategories.forEach(cat => {
-                const card = document.createElement('div');
-                card.className = 'category-card';
-                card.innerHTML = `
-                    <div class="category-info">
-                        <div class="category-color" style="background-color: ${cat.color};"></div>
-                        <span class="category-name">${cat.name}</span>
-                    </div>
-                    <button class="category-delete" data-category-id="${cat.id}">Șterge</button>
+    renderAccountingReports(startDate, endDate, summary) {
+        // ===== DAILY BREAKDOWN =====
+        const dailyBreakdown = Accounting.getDailyBreakdown(startDate, endDate);
+        const breakdownContainer = document.getElementById('dayBreakdownAccounting');
+        if (breakdownContainer) {
+            breakdownContainer.innerHTML = '';
+            
+            if (dailyBreakdown.length === 0) {
+                breakdownContainer.innerHTML = '<p class="empty-state">Nu există tranzacții pentru perioada selectată</p>';
+            } else {
+                // Header
+                const headerRow = document.createElement('div');
+                headerRow.className = 'daily-summary-row header';
+                headerRow.innerHTML = `
+                    <div class="col-date">Data</div>
+                    <div class="col-income">Venituri</div>
+                    <div class="col-expense">Cheltuieli</div>
+                    <div class="col-profit">Profit</div>
                 `;
-                incomeList.appendChild(card);
-            });
+                breakdownContainer.appendChild(headerRow);
+
+                // Data rows
+                dailyBreakdown.forEach(day => {
+                    const profitClass = day.profit >= 0 ? 'profit-positive' : 'profit-negative';
+                    const row = document.createElement('div');
+                    row.className = 'daily-summary-row';
+                    row.innerHTML = `
+                        <div class="col-date">${day.date}</div>
+                        <div class="col-income" style="color: var(--color-success);">+${UI.formatCurrency(day.income)}</div>
+                        <div class="col-expense" style="color: var(--color-danger);">-${UI.formatCurrency(day.expense)}</div>
+                        <div class="col-profit ${profitClass}">${day.profit >= 0 ? '+' : ''}${UI.formatCurrency(day.profit)}</div>
+                    `;
+                    breakdownContainer.appendChild(row);
+                });
+            }
         }
-
-        // Populate expense categories list
-        const expenseList = document.getElementById('expenseCategories');
-        if (expenseList) {
-            expenseList.innerHTML = '';
-            expenseCategories.forEach(cat => {
-                const card = document.createElement('div');
-                card.className = 'category-card';
-                card.innerHTML = `
-                    <div class="category-info">
-                        <div class="category-color" style="background-color: ${cat.color};"></div>
-                        <span class="category-name">${cat.name}</span>
-                    </div>
-                    <button class="category-delete" data-category-id="${cat.id}">Șterge</button>
-                `;
-                expenseList.appendChild(card);
-            });
-        }
-
-        this.setupCategoryDeleteButtons();
-    },
-
-    renderAccountingReports(txs) {
-        // Get filtered transactions for reports
-        const expenseTransactions = txs.filter(t => t.type === 'expense' && t.status === 'confirmed');
-        const incomeTransactions = txs.filter(t => t.type === 'income' && t.status === 'confirmed');
-
-        // ===== DAILY EXPENSES SUMMARY =====
-        this.renderDailyExpenseSummary(expenseTransactions);
-
-        // ===== DAILY PROFIT SUMMARY =====
-        this.renderDailyProfitSummary(txs);
 
         // ===== TOP EXPENSE CATEGORIES =====
-        const topExpenses = Accounting.getTopExpenseCategories(txs, 5);
+        const topCategories = Accounting.getTopExpenseCategories(startDate, endDate, 5);
         const topExpenseContainer = document.getElementById('topExpenseCategories');
         if (topExpenseContainer) {
             topExpenseContainer.innerHTML = '';
-            if (topExpenses.length === 0) {
+            if (topCategories.length === 0) {
                 topExpenseContainer.innerHTML = '<p class="empty-state">Nu există cheltuieli</p>';
             } else {
-                topExpenses.forEach(item => {
+                topCategories.forEach(item => {
                     const itemEl = document.createElement('div');
                     itemEl.className = 'report-item';
                     itemEl.innerHTML = `
-                        <span class="report-item-name">${item.categoryName}</span>
-                        <span class="report-item-amount">-${UI.formatCurrency(item.amount)}</span>
+                        <span class="report-item-name">${item.category}</span>
+                        <span class="report-item-amount" style="color: var(--color-danger);">-${UI.formatCurrency(item.amount)}</span>
                     `;
                     topExpenseContainer.appendChild(itemEl);
                 });
@@ -1747,7 +1588,7 @@ const App = {
         }
 
         // ===== TOP SERVICES =====
-        const topServices = Accounting.getTopServices(txs, 5);
+        const topServices = Accounting.getTopServices(startDate, endDate, 5);
         const topServicesContainer = document.getElementById('topServices');
         if (topServicesContainer) {
             topServicesContainer.innerHTML = '';
@@ -1758,33 +1599,27 @@ const App = {
                     const itemEl = document.createElement('div');
                     itemEl.className = 'report-item';
                     itemEl.innerHTML = `
-                        <span class="report-item-name">${item.serviceName}</span>
+                        <span class="report-item-name">${item.service || 'Serviciu'}</span>
                         <span class="report-item-amount" style="color: var(--color-success);">+${UI.formatCurrency(item.amount)}</span>
                     `;
                     topServicesContainer.appendChild(itemEl);
                 });
             }
         }
+    },
 
-        // ===== DAY BREAKDOWN =====
-        const groupedByDay = Accounting.groupByDay(txs);
-        const breakdownContainer = document.getElementById('dayBreakdownAccounting');
-        if (breakdownContainer) {
-            breakdownContainer.innerHTML = '';
-            
-            if (groupedByDay.length === 0) {
-                breakdownContainer.innerHTML = '<p class="empty-state">Nu există tranzacții</p>';
-            } else {
-                // Header
-                const header = document.createElement('div');
-                header.className = 'breakdown-table-header daily-summary-row header';
-                header.innerHTML = `
-                    <span>Data</span>
-                    <span>Venituri</span>
-                    <span>Cheltuieli</span>
-                    <span>Profit</span>
-                `;
-                breakdownContainer.appendChild(header);
+    deleteTransaction(txId, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        if (!confirm('Ștergi tranzacția?')) return;
+
+        Accounting.deleteTransaction(txId);
+        UI.showToast('Tranzacție ștearsă', 'success');
+        this.renderAccounting();
+    },
 
                 // Rows
                 groupedByDay.forEach(day => {
@@ -1792,202 +1627,98 @@ const App = {
                     row.className = 'breakdown-table-row daily-summary-row';
                     const profitClass = day.profit >= 0 ? 'daily-profit' : 'daily-profit negative';
                     row.innerHTML = `
-                        <span class="daily-date">${day.date}</span>
-                        <span class="daily-income">+${UI.formatCurrency(day.income)}</span>
-                        <span class="daily-expenses">-${UI.formatCurrency(day.expenses)}</span>
-                        <span class="${profitClass}">${day.profit >= 0 ? '+' : ''}${UI.formatCurrency(day.profit)}</span>
-                    `;
-                    breakdownContainer.appendChild(row);
-                });
-            }
-        }
     },
 
-    renderDailyExpenseSummary(expenseTransactions) {
-        const container = document.getElementById('dailyExpenseSummary');
-        if (!container) return;
-
-        // Group expenses by date
-        const groupedExpenses = {};
-        expenseTransactions.forEach(tx => {
-            if (!groupedExpenses[tx.date]) {
-                groupedExpenses[tx.date] = 0;
-            }
-            groupedExpenses[tx.date] += tx.amount;
-        });
-
-        // Sort by date descending
-        const sortedDates = Object.keys(groupedExpenses).sort((a, b) => new Date(b) - new Date(a));
-
-        if (sortedDates.length === 0) {
-            container.innerHTML = '<p class="empty-state">Nu există cheltuieli pentru perioada selectată</p>';
-            return;
+    deleteTransaction(txId, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
         }
 
-        // Render header
-        container.innerHTML = '';
-        const header = document.createElement('div');
-        header.className = 'daily-summary-row header';
-        header.innerHTML = `
-            <span>Data</span>
-            <span>Total Cheltuieli</span>
-        `;
-        container.appendChild(header);
+        if (!confirm('Ștergi tranzacția?')) return;
 
-        // Render rows
-        sortedDates.forEach(date => {
-            const row = document.createElement('div');
-            row.className = 'daily-summary-row';
-            row.innerHTML = `
-                <span class="daily-date">${date}</span>
-                <span class="daily-expenses">-${UI.formatCurrency(groupedExpenses[date])}</span>
-            `;
-            container.appendChild(row);
-        });
-    },
-
-    renderDailyProfitSummary(allTransactions) {
-        const container = document.getElementById('dailyProfitSummary');
-        if (!container) return;
-
-        // Group by date
-        const groupedByDay = {};
-        allTransactions.forEach(tx => {
-            if (tx.status !== 'confirmed') return;
-            if (!groupedByDay[tx.date]) {
-                groupedByDay[tx.date] = { income: 0, expenses: 0 };
-            }
-            if (tx.type === 'income') {
-                groupedByDay[tx.date].income += tx.amount;
-            } else {
-                groupedByDay[tx.date].expenses += tx.amount;
-            }
-        });
-
-        // Sort by date descending
-        const sortedDates = Object.keys(groupedByDay).sort((a, b) => new Date(b) - new Date(a));
-
-        if (sortedDates.length === 0) {
-            container.innerHTML = '<p class="empty-state">Nu există tranzacții pentru perioada selectată</p>';
-            return;
-        }
-
-        // Render header
-        container.innerHTML = '';
-        const header = document.createElement('div');
-        header.className = 'daily-summary-row header';
-        header.innerHTML = `
-            <span>Data</span>
-            <span>Venituri</span>
-            <span>Cheltuieli</span>
-            <span>Profit</span>
-        `;
-        container.appendChild(header);
-
-        // Render rows
-        sortedDates.forEach(date => {
-            const day = groupedByDay[date];
-            const profit = day.income - day.expenses;
-            const profitClass = profit >= 0 ? 'daily-profit' : 'daily-profit negative';
-            const row = document.createElement('div');
-            row.className = 'daily-summary-row';
-            row.innerHTML = `
-                <span class="daily-date">${date}</span>
-                <span class="daily-income">+${UI.formatCurrency(day.income)}</span>
-                <span class="daily-expenses">-${UI.formatCurrency(day.expenses)}</span>
-                <span class="${profitClass}">${profit >= 0 ? '+' : ''}${UI.formatCurrency(profit)}</span>
-            `;
-            container.appendChild(row);
-        });
-    },
-
-    formatPaymentMethod(method) {
-        const methods = {
-            'cash': 'Numerar',
-            'card': 'Card',
-            'transfer': 'Transfer'
-        };
-        return methods[method] || method;
+        Accounting.deleteTransaction(txId);
+        UI.showToast('Tranzacție ștearsă', 'success');
+        this.renderAccounting();
     },
 
     /**
-     * ==================== ACCOUNTING SAVE FUNCTIONS ====================
-     */
-
-    saveIncome() {
-        const date = document.getElementById('incomeDate')?.value;
-        const time = document.getElementById('incomeTime')?.value || '12:00';
-        const amount = parseFloat(document.getElementById('incomeAmount')?.value || 0);
+        const amount = document.getElementById('incomeAmount')?.value;
         const clientId = document.getElementById('incomeClient')?.value;
         const serviceName = document.getElementById('incomeService')?.value;
         const method = document.getElementById('incomeMethod')?.value || 'cash';
         const note = document.getElementById('incomeNote')?.value || '';
 
-        if (!date || amount <= 0 || !serviceName) {
+        if (!date || !amount || !serviceName) {
             UI.showToast('Completează data, sumă și serviciu', 'warning');
             return;
         }
 
-        const result = Accounting.addTransaction({
+        const defaultIncomeCategory = Accounting.loadCategories().find(c => c.type === 'income');
+        
+        const tx = {
+            id: 'tx_' + Date.now(),
             type: 'income',
-            date,
-            time,
-            amount,
+            date: date,
+            time: time,
+            amount: parseFloat(amount),
+            currency: 'RON',
+            categoryId: defaultIncomeCategory ? defaultIncomeCategory.id : 'income_default',
             clientId: clientId || null,
-            serviceName,
+            serviceName: serviceName,
             paymentMethod: method,
-            note,
-            status: 'confirmed'
-        });
+            note: note,
+            status: 'confirmed',
+            createdAt: new Date().toISOString()
+        };
 
-        if (result.error) {
-            UI.showToast(result.error, 'warning');
-            return;
-        }
-
-        UI.showToast(`Venit +${UI.formatCurrency(amount)} adăugat`, 'success');
-        document.getElementById('accIncomeForm')?.reset();
+        Accounting.addTransaction(tx);
+        UI.showToast('Venit adăugat', 'success');
+        
+        // Reset form
+        document.getElementById('accIncomeForm').reset();
         this.renderAccounting();
     },
 
     saveExpenseAccounting() {
         const date = document.getElementById('expenseDate')?.value;
         const time = document.getElementById('expenseTime')?.value || '12:00';
-        const amount = parseFloat(document.getElementById('expenseAmount')?.value || 0);
+        const amount = document.getElementById('expenseAmount')?.value;
         const categoryId = document.getElementById('expenseCategory')?.value;
         const method = document.getElementById('expenseMethod')?.value || 'cash';
         const note = document.getElementById('expenseNote')?.value || '';
 
-        if (!date || amount <= 0 || !categoryId) {
+        if (!date || !amount || !categoryId) {
             UI.showToast('Completează data, sumă și categorie', 'warning');
             return;
         }
 
-        const result = Accounting.addTransaction({
+        const tx = {
+            id: 'tx_' + Date.now(),
             type: 'expense',
-            date,
-            time,
-            amount,
-            categoryId,
+            date: date,
+            time: time,
+            amount: parseFloat(amount),
+            currency: 'RON',
+            categoryId: categoryId,
             paymentMethod: method,
-            note,
-            status: 'confirmed'
-        });
+            note: note,
+            status: 'confirmed',
+            createdAt: new Date().toISOString()
+        };
 
-        if (result.error) {
-            UI.showToast(result.error, 'warning');
-            return;
-        }
-
-        UI.showToast(`Cheltuiala -${UI.formatCurrency(amount)} adăugată`, 'success');
-        document.getElementById('accExpenseForm')?.reset();
+        Accounting.addTransaction(tx);
+        UI.showToast('Cheltuiala adăugată', 'success');
+        
+        // Reset form
+        document.getElementById('accExpenseForm').reset();
         this.renderAccounting();
     },
 
     saveCategory() {
         const type = document.getElementById('newCategoryType')?.value;
-        const name = document.getElementById('newCategoryName')?.value?.trim();
-        const color = document.getElementById('newCategoryColor')?.value || '#9D4EDD';
+        const name = document.getElementById('newCategoryName')?.value;
+        const color = document.getElementById('newCategoryColor')?.value;
 
         if (!name || !type) {
             UI.showToast('Completează tip și nume', 'warning');
@@ -1995,18 +1726,18 @@ const App = {
         }
 
         Accounting.addCategory(name, type, color);
-        UI.showToast(`Categorie "${name}" adăugată`, 'success');
-        document.getElementById('addCategoryForm').style.display = 'none';
+        UI.showToast('Categorie adăugată', 'success');
         document.getElementById('newCategoryName').value = '';
         this.renderAccounting();
     },
 
-    deleteTransaction(txId) {
-        if (!confirm('Ștergi tranzacție?')) return;
-        Accounting.deleteTransaction(txId);
-        UI.showToast('Tranzacție ștearsă', 'success');
-        this.renderAccounting();
+    editTransaction(txId) {
+        UI.showToast('Edit nu e disponibil încă', 'info');
     },
+
+    deleteTransaction(txId) {
+        if (confirm('Ștergi tranzacție?')) {
+            Accounting.deleteTransaction(txId);
             UI.showToast('Tranzacție ștearsă', 'success');
             this.renderAccounting();
         }
