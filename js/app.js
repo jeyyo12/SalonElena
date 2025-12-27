@@ -59,6 +59,16 @@ const App = {
             console.log('[EVENT BUS] data:changed triggered by:', reason);
             this.recalcAndRenderAll();
         });
+
+        // STORAGE SYNC: Listen for cross-tab storage changes
+        window.addEventListener('storage', (event) => {
+            if (['transactions', 'appointments', 'clients', 'services'].includes(event.key)) {
+                console.log('[STORAGE SYNC] Data changed in another tab:', event.key);
+                window.dispatchEvent(new CustomEvent('data:changed', {
+                    detail: { reason: 'storage:external-sync', key: event.key }
+                }));
+            }
+        });
         
         // Render initial content (or use hash-based routing)
         const initialHash = window.location.hash?.substring(1);
@@ -1555,6 +1565,19 @@ const App = {
         });
 
         UI.showToast(`Programare finalizată - ${UI.formatCurrency(amount)} încasat`, 'success');
+
+        // EMIT PAYMENT CONFIRMATION EVENT (for toast system)
+        window.dispatchEvent(new CustomEvent('ui:payment-confirmed', {
+            detail: {
+                transactionId: transaction.id,
+                appointmentId: apptId,
+                clientName: client.name,
+                serviceName: service.name,
+                amount: amount,
+                paymentMethod: paymentMethod,
+                dateTime: now
+            }
+        }));
 
         // 5. EMIT EVENT BUS - triggers recalcAndRenderAll()
         window.dispatchEvent(new CustomEvent('data:changed', {
