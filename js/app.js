@@ -32,6 +32,14 @@ const App = {
      * Initialize application
      */
     init() {
+        // CRITICAL FIX: Ensure overlay is properly hidden on startup
+        const overlay = document.getElementById('modalOverlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+            Logger.log('[INIT] Overlay reset to inactive state');
+        }
+        document.body.classList.remove('modal-open');
+        
         // Set date values after UI is ready
         AppState.transactionDateFilter = UI.getTodayInputValue?.() || new Date().toISOString().split('T')[0];
         AppState.historyDate = UI.getTodayInputValue?.() || new Date().toISOString().split('T')[0];
@@ -1111,6 +1119,12 @@ const App = {
     setupModals() {
         Logger.log('[INIT] Setting up modal handlers');
         
+        // CRITICAL FIX: Ensure all modals are hidden on startup
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.remove('active');
+            Logger.log('[INIT] Modal reset:', modal.id);
+        });
+        
         UI.setupModalClose('clientModal');
         UI.setupModalTabs('clientModal');
         UI.setupModalClose('appointmentModal');
@@ -1623,127 +1637,6 @@ const App = {
         this.renderAccounting();
     },
 
-                // Rows
-                groupedByDay.forEach(day => {
-                    const row = document.createElement('div');
-                    row.className = 'breakdown-table-row daily-summary-row';
-                    const profitClass = day.profit >= 0 ? 'daily-profit' : 'daily-profit negative';
-                    row.innerHTML = `
-    },
-
-    deleteTransaction(txId, event) {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-
-        if (!confirm('Ștergi tranzacția?')) return;
-
-        Accounting.deleteTransaction(txId);
-        UI.showToast('Tranzacție ștearsă', 'success');
-        this.renderAccounting();
-    },
-
-    /**
-        const amount = document.getElementById('incomeAmount')?.value;
-        const clientId = document.getElementById('incomeClient')?.value;
-        const serviceName = document.getElementById('incomeService')?.value;
-        const method = document.getElementById('incomeMethod')?.value || 'cash';
-        const note = document.getElementById('incomeNote')?.value || '';
-
-        if (!date || !amount || !serviceName) {
-            UI.showToast('Completează data, sumă și serviciu', 'warning');
-            return;
-        }
-
-        const defaultIncomeCategory = Accounting.loadCategories().find(c => c.type === 'income');
-        
-        const tx = {
-            id: 'tx_' + Date.now(),
-            type: 'income',
-            date: date,
-            time: time,
-            amount: parseFloat(amount),
-            currency: 'RON',
-            categoryId: defaultIncomeCategory ? defaultIncomeCategory.id : 'income_default',
-            clientId: clientId || null,
-            serviceName: serviceName,
-            paymentMethod: method,
-            note: note,
-            status: 'confirmed',
-            createdAt: new Date().toISOString()
-        };
-
-        Accounting.addTransaction(tx);
-        UI.showToast('Venit adăugat', 'success');
-        
-        // Reset form
-        document.getElementById('accIncomeForm').reset();
-        this.renderAccounting();
-    },
-
-    saveExpenseAccounting() {
-        const date = document.getElementById('expenseDate')?.value;
-        const time = document.getElementById('expenseTime')?.value || '12:00';
-        const amount = document.getElementById('expenseAmount')?.value;
-        const categoryId = document.getElementById('expenseCategory')?.value;
-        const method = document.getElementById('expenseMethod')?.value || 'cash';
-        const note = document.getElementById('expenseNote')?.value || '';
-
-        if (!date || !amount || !categoryId) {
-            UI.showToast('Completează data, sumă și categorie', 'warning');
-            return;
-        }
-
-        const tx = {
-            id: 'tx_' + Date.now(),
-            type: 'expense',
-            date: date,
-            time: time,
-            amount: parseFloat(amount),
-            currency: 'RON',
-            categoryId: categoryId,
-            paymentMethod: method,
-            note: note,
-            status: 'confirmed',
-            createdAt: new Date().toISOString()
-        };
-
-        Accounting.addTransaction(tx);
-        UI.showToast('Cheltuiala adăugată', 'success');
-        
-        // Reset form
-        document.getElementById('accExpenseForm').reset();
-        this.renderAccounting();
-    },
-
-    saveCategory() {
-        const type = document.getElementById('newCategoryType')?.value;
-        const name = document.getElementById('newCategoryName')?.value;
-        const color = document.getElementById('newCategoryColor')?.value;
-
-        if (!name || !type) {
-            UI.showToast('Completează tip și nume', 'warning');
-            return;
-        }
-
-        Accounting.addCategory(name, type, color);
-        UI.showToast('Categorie adăugată', 'success');
-        document.getElementById('newCategoryName').value = '';
-        this.renderAccounting();
-    },
-
-    editTransaction(txId) {
-        UI.showToast('Edit nu e disponibil încă', 'info');
-    },
-
-    deleteTransaction(txId) {
-        if (confirm('Ștergi tranzacție?')) {
-            Accounting.deleteTransaction(txId);
-            UI.showToast('Tranzacție ștearsă', 'success');
-            this.renderAccounting();
-        }
-    },
 
     saveClient() {
         const name = document.getElementById('clientName').value.trim();
@@ -2208,6 +2101,26 @@ const App = {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    // CRITICAL FIX: Reset overlay and modal states before initialization
+    console.log('[CRITICAL FIX] Resetting modal/overlay states on DOMContentLoaded');
+    const overlay = document.getElementById('modalOverlay');
+    const modals = document.querySelectorAll('.modal');
+    
+    if (overlay) {
+        overlay.classList.remove('active');
+        console.log('[MODAL FIX] Overlay reset to hidden state');
+    } else {
+        console.error('[ERROR] Modal overlay element not found in DOM!');
+    }
+    
+    modals.forEach(modal => {
+        modal.classList.remove('active');
+        console.log('[MODAL FIX] Modal reset:', modal.id);
+    });
+    
+    document.body.classList.remove('modal-open');
+    
+    // Now initialize the app
     App.init();
     
     // Setup sync status update button

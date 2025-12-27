@@ -63,12 +63,21 @@ const UI = {
         }
         
         modal.classList.remove('active');
+        Logger.log('[CLOSE] Removed active class from modal:', modalId);
         
         // Check if any modal is still open
         const openModals = document.querySelectorAll('.modal.active');
+        Logger.log('[CLOSE] Active modals remaining:', openModals.length);
+        
         if (openModals.length === 0) {
-            if (overlay) overlay.classList.remove('active');
+            if (overlay) {
+                overlay.classList.remove('active');
+                Logger.log('[CLOSE] Overlay deactivated - no more open modals');
+            }
             document.body.classList.remove('modal-open');
+            Logger.log('[CLOSE] modal-open class removed from body');
+        } else {
+            Logger.log('[CLOSE] Other modals still open, keeping overlay active');
         }
         Logger.log('[CLOSE] Modal closed successfully');
     },

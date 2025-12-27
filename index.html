@@ -822,5 +822,44 @@
     <script src="js/history.js"></script>
     <script src="js/accounting.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- DEBUG: Click Event Monitor (temporary - remove after testing) -->
+    <script>
+        // Debug helper 1: Log all clicks to console
+        document.addEventListener('click', (e) => {
+            const overlay = document.getElementById('modalOverlay');
+            const overlayActive = overlay && overlay.classList.contains('active');
+            const target = e.target.tagName + (e.target.id ? '#' + e.target.id : '') + (e.target.className ? '.' + e.target.className.split(' ')[0] : '');
+            console.log('[CLICK DEBUG]', target, '| Overlay active:', overlayActive, '| Pointer-events:', window.getComputedStyle(overlay).pointerEvents);
+        }, true);
+
+        // Debug helper 2: Log modal state every 2 seconds
+        setInterval(() => {
+            const overlay = document.getElementById('modalOverlay');
+            const modals = document.querySelectorAll('.modal.active');
+            const overlayComputedStyle = window.getComputedStyle(overlay);
+            console.log('[STATE DEBUG]', {
+                overlayDisplay: overlayComputedStyle.display,
+                overlayPointerEvents: overlayComputedStyle.pointerEvents,
+                overlayZIndex: overlayComputedStyle.zIndex,
+                activeModalsCount: modals.length,
+                modalOverlayHasActiveClass: overlay.classList.contains('active')
+            });
+        }, 3000);
+
+        // Debug helper 3: Check initial state
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const overlay = document.getElementById('modalOverlay');
+                const modals = document.querySelectorAll('.modal');
+                console.log('[INIT DEBUG] Modal system status:', {
+                    overlayElement: overlay ? 'FOUND' : 'NOT FOUND',
+                    modalsCount: modals.length,
+                    overlayInHTML: !!overlay,
+                    overlayClasses: overlay ? overlay.className : 'N/A'
+                });
+            }, 500);
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,173 @@
+================================================================================
+INSTRUCȚIUNI DE TESTARE ȘI CURĂȚARE
+================================================================================
+
+PASUL 1: TESTARE APLICAȚIEI
+============================
+
+1. Deschide index.html în browser
+2. Deschide Developer Tools (F12)
+3. Mergi la Console tab
+4. Ar trebui să vezi:
+   [CRITICAL FIX] Resetting modal/overlay states on DOMContentLoaded
+   [MODAL FIX] Overlay reset to hidden state
+   [MODAL FIX] Modal reset: clientModal
+   [MODAL FIX] Modal reset: appointmentModal
+   [MODAL FIX] Modal reset: serviceModal
+   [MODAL FIX] Modal reset: expenseModal
+   [MODAL FIX] Modal reset: recurringExpensesModal
+   [INIT DEBUG] Modal system status: {...}
+
+TEST CASE 1: Navigația funcționează
+------------------------------------
+- Click pe "Clienți" în header → ar trebui să schimbe secțiune
+- Click pe "Programări" → ar trebui să schimbe secțiune
+- Click pe "Încasări" → ar trebui să schimbe secțiune
+- Dacă ORICARE dintre acestea nu funcționează → BUG ÎNCĂ ACTIV
+
+TEST CASE 2: Butoane funcționează
+----------------------------------
+- Pe secțiunea "Clienți", click pe "+ Clientă Nouă"
+  → Modal se deschide
+  → Console arată: [CLICK DEBUG] BUTTON#btnAddClient | Overlay active: true
+  → Modal content este clickable
+
+- Click pe "Programări", click pe "+ Nouă Programare"
+  → Același comportament
+
+TEST CASE 3: Închidere Modal
+------------------------------
+- Deschide modal (click "+ Clientă Nouă")
+- Click pe X button din colțul modal
+  → Modal se închide
+  → Overlay dispare
+  → Console arată: [CLICK DEBUG] BUTTON.modal-close
+
+- Deschide din nou
+- Click pe zona NEAGRĂ (overlay) din spate
+  → Modal se închide
+  → Console arată: [CLICK DEBUG] DIV#modalOverlay
+
+- Deschide din nou
+- Apasă ESC key
+  → Modal se închide automat
+
+TEST CASE 4: Click-uri pe pagina principais după modal
+---------------------------------------------------------
+- Deschide + închide un modal
+- Click pe header navigation butoane
+  → Ar trebui să funcționeze normal
+- Click pe alte butoane din secțiune
+  → Ar trebui să funcționeze
+
+TEST CASE 5: Console Debugging
+-------------------------------
+După fiecare click, ar trebui să vezi în Console:
+[CLICK DEBUG] TARGET_NAME | Overlay active: true/false | Pointer-events: auto/none
+
+Dacă nu vezi nimic: Click event nu a fost transmis (BUG)
+Dacă Overlay active: true și nu ar trebui: BUG în closeModal()
+Dacă Pointer-events: auto cu overlay active: true: NORMAL (corect)
+
+================================================================================
+
+PASUL 2: CURĂȚARE DEBUG HELPERS (după ce testezi)
+===================================================
+
+După ce ai confirmat că TOTUL funcționează:
+
+1. Deschide index.html în editor
+2. Caută: <!-- DEBUG: Click Event Monitor (temporary - remove after testing) -->
+3. Șterge TOATĂ secțiunea <script> care urmează
+   (de la comment până la </script> final - aproximativ liniile 825-860)
+
+ÎNAINTE (cu debug):
+-------------------
+    <!-- DEBUG: Click Event Monitor (temporary - remove after testing) -->
+    <script>
+        // Debug helper 1: Log all clicks...
+        document.addEventListener('click', (e) => {
+            ...
+        }, 3000);
+    </script>
+</body>
+</html>
+
+DUPĂ (fără debug):
+------------------
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="js/logger.js"></script>
+    ...
+    <script src="js/app.js"></script>
+</body>
+</html>
+
+4. Salvează fișierul
+5. Reîncarcă pagina în browser
+   - Ar trebui să funcționeze identic (mai curat în console)
+   - Nu mai vezi [CLICK DEBUG], [STATE DEBUG], [INIT DEBUG] messages
+
+================================================================================
+
+DEBUGGING QUICK REFERENCE:
+===========================
+
+Dacă click-urile NU funcționează:
+
+1. Deschide Console (F12)
+2. Tastează: document.getElementById('modalOverlay').classList
+   Ar trebui să arăte: DOMTokenList(0) sau DOMTokenList ["active"]
+   - Dacă "active" apare: resetează manual cu:
+     document.getElementById('modalOverlay').classList.remove('active')
+
+3. Tastează: window.getComputedStyle(document.getElementById('modalOverlay')).display
+   Ar trebui să arăte: "none"
+   - Dacă "block": resetează și verifica CSS cu DevTools Inspector
+
+4. Tastează: document.querySelectorAll('.modal.active').length
+   Ar trebui să arăte: 0 (zero modals active)
+   - Dacă > 0: modale nu se închid corect
+
+5. Verifica în DevTools Elements tab:
+   - Caută <div id="modalOverlay"> element
+   - Ar trebui să NU aibă clasa "active" când nu ai nicio modală deschisă
+   - Ar trebui SĂ aibă clasa "active" când ai o modală deschisă
+
+================================================================================
+
+VERIFICARE FINALĂ CSS:
+======================
+
+Dacă nu ai css!important și breakpoints, rulează:
+
+În Console:
+-----------
+let overlay = document.getElementById('modalOverlay');
+let computed = window.getComputedStyle(overlay);
+console.log({
+    display: computed.display,
+    pointerEvents: computed.pointerEvents,
+    zIndex: computed.zIndex,
+    hasActiveClass: overlay.classList.contains('active')
+});
+
+Expected output (when modal NOT open):
+{
+    display: "none",
+    pointerEvents: "none",
+    zIndex: "9998",
+    hasActiveClass: false
+}
+
+Expected output (when modal IS open):
+{
+    display: "block",
+    pointerEvents: "auto",
+    zIndex: "9998",
+    hasActiveClass: true
+}
+
+================================================================================

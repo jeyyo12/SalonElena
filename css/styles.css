@@ -71,6 +71,12 @@
     box-sizing: border-box;
 }
 
+/* CRITICAL FIX: Ensure pseudo-elements don't block clicks */
+*::before,
+*::after {
+    pointer-events: none;
+}
+
 html {
     scroll-behavior: smooth;
 }
@@ -129,6 +135,8 @@ p {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    position: relative;
+    z-index: 1;
 }
 
 .top-nav {
@@ -139,6 +147,7 @@ p {
     top: 0;
     z-index: 100;
     box-shadow: var(--shadow-sm);
+    pointer-events: auto;
 }
 
 .nav-container {
@@ -210,6 +219,9 @@ p {
     width: 100%;
     margin: 0 auto;
     padding: var(--spacing-xl);
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
 }
 
 .tab-section {
@@ -291,6 +303,7 @@ p {
     background: rgba(255, 255, 255, 0.1);
     transform: translate(-50%, -50%);
     transition: width var(--transition-base), height var(--transition-base);
+    pointer-events: none;
 }
 
 .btn:active::before {
@@ -548,6 +561,7 @@ textarea.input-dark {
     right: 0;
     height: 1px;
     background: linear-gradient(90deg, transparent, var(--color-accent-violet), transparent);
+    pointer-events: none;
 }
 
 .kpi-card:hover {
@@ -688,6 +702,7 @@ textarea.input-dark {
     right: 0;
     height: 2px;
     background: linear-gradient(90deg, var(--color-accent-violet), transparent);
+    pointer-events: none;
 }
 
 .client-card:hover {
@@ -1093,6 +1108,7 @@ textarea.input-dark {
     right: 0;
     height: 2px;
     background: linear-gradient(90deg, var(--color-accent-violet), transparent);
+    pointer-events: none;
 }
 
 .service-card:hover {
@@ -1161,7 +1177,6 @@ body.modal-open {
 }
 
 .modal-overlay {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -1171,16 +1186,19 @@ body.modal-open {
     backdrop-filter: blur(4px);
     z-index: 9998;
     pointer-events: none;
+    display: none !important;
+    opacity: 0;
+    transition: opacity var(--transition-base);
 }
 
 .modal-overlay.active {
-    display: block;
+    display: block !important;
+    opacity: 1;
     pointer-events: auto;
     animation: fadeIn var(--transition-base);
 }
 
 .modal {
-    display: none;
     position: fixed;
     top: 50%;
     left: 50%;
@@ -1191,10 +1209,14 @@ body.modal-open {
     max-height: 90vh;
     overflow-y: auto;
     pointer-events: none;
+    display: none !important;
+    opacity: 0;
+    transition: opacity var(--transition-base);
 }
 
 .modal.active {
-    display: block;
+    display: block !important;
+    opacity: 1;
     pointer-events: auto;
     animation: slideIn var(--transition-base);
 }
