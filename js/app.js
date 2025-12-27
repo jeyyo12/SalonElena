@@ -119,9 +119,7 @@ const App = {
                 this.renderHistory();
                 break;
             case 'accounting':
-                // AUTO-SYNC before rendering accounting tab
-                Logger.log('[APP] Switching to accounting - running full sync');
-                Accounting.fullSync();
+                Logger.log('[APP] Switched to accounting tab');
                 this.renderAccounting();
                 break;
             case 'services':
