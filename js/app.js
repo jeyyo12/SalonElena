@@ -9,9 +9,9 @@ let AppState = {
     currentServiceId: null,
     appointmentFilter: 'today',
     transactionFilter: 'all',
-    transactionDateFilter: UI.getTodayInputValue(),
+    transactionDateFilter: null,  // Will be set in init()
     historyPeriod: 'day',
-    historyDate: UI.getTodayInputValue(),
+    historyDate: null,  // Will be set in init()
     historyTxFilter: 'all',
     historyTxSearch: '',
     accountingPeriod: 'month',
@@ -32,6 +32,10 @@ const App = {
      * Initialize application
      */
     init() {
+        // Set date values after UI is ready
+        AppState.transactionDateFilter = UI.getTodayInputValue?.() || new Date().toISOString().split('T')[0];
+        AppState.historyDate = UI.getTodayInputValue?.() || new Date().toISOString().split('T')[0];
+        
         // Initialize auto-sync storage first
         Storage.init();
         
