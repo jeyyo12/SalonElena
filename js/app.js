@@ -32,6 +32,9 @@ const App = {
      * Initialize application
      */
     init() {
+        // GitHub Pages Detection & Routing
+        this.setupGitHubPagesCompat();
+        
         // CRITICAL FIX: Ensure overlay is properly hidden on startup
         const overlay = document.getElementById('modalOverlay');
         if (overlay) {
@@ -49,11 +52,48 @@ const App = {
         
         this.loadData();
         this.setupEventListeners();
-        this.render();
+        
+        // Render initial content (or use hash-based routing)
+        const initialHash = window.location.hash?.substring(1);
+        if (initialHash && ['dashboard', 'clients', 'appointments', 'transactions', 'accounting', 'history', 'services'].includes(initialHash)) {
+            // Hash routing will handle this via setupHashRouting()
+            console.log('[INIT] Initial hash detected, will be handled by hash routing:', initialHash);
+        } else {
+            // No hash, render default dashboard
+            this.renderDashboard();
+        }
+        
         this.updateDateTime();
         
         // Update date/time every minute
         setInterval(() => this.updateDateTime(), 60000);
+    },
+
+    /**
+     * GitHub Pages Compatibility:
+     * Ensures proper routing and path resolution for GitHub Pages hosted at /SalonElena/
+     */
+    setupGitHubPagesCompat() {
+        const pathname = window.location.pathname;
+        const basePath = window.APP_BASE_PATH || './';
+        
+        console.log('[GITHUB PAGES COMPAT] Setup:');
+        console.log('  - Current pathname:', pathname);
+        console.log('  - Detected basePath:', basePath);
+        console.log('  - Is GitHub Pages:', pathname.includes('/SalonElena/'));
+        
+        // If user tries to refresh on any tab, ensure we route to that tab
+        // This is important because GitHub Pages routes all requests to index.html
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashTab = window.location.hash?.substring(1); // Remove # prefix
+        
+        if (hashTab && ['dashboard', 'clients', 'appointments', 'transactions', 'accounting', 'history', 'services'].includes(hashTab)) {
+            console.log('[GITHUB PAGES COMPAT] Routing to tab from hash:', hashTab);
+            // Will be applied after DOM is ready - use silent switch to avoid hash update loop
+            setTimeout(() => {
+                this.switchTabSilent(hashTab);
+            }, 100);
+        }
     },
 
     /**
@@ -76,6 +116,7 @@ const App = {
      */
     setupEventListeners() {
         this.setupNavigation();
+        this.setupHashRouting();
         this.setupClients();
         this.setupAppointments();
         this.setupServices();
@@ -97,7 +138,88 @@ const App = {
         });
     },
 
+    /**
+     * Hash Routing for GitHub Pages
+     * Allows navigation via URL hash (#tab-name)
+     */
+    setupHashRouting() {
+        // Listen for hash changes (browser back/forward, manual URL changes)
+        window.addEventListener('hashchange', () => {
+            const hashTab = window.location.hash?.substring(1); // Remove # prefix
+            const validTabs = ['dashboard', 'clients', 'appointments', 'transactions', 'accounting', 'history', 'services'];
+            
+            if (hashTab && validTabs.includes(hashTab)) {
+                console.log('[HASH ROUTING] Detected hash change:', hashTab);
+                // Route without updating hash again (prevent loop)
+                this.switchTabSilent(hashTab);
+            }
+        });
+        
+        // Check initial hash on load
+        const initialHash = window.location.hash?.substring(1);
+        if (initialHash && ['dashboard', 'clients', 'appointments', 'transactions', 'accounting', 'history', 'services'].includes(initialHash)) {
+            console.log('[HASH ROUTING] Initial hash:', initialHash);
+            setTimeout(() => this.switchTabSilent(initialHash), 100);
+        }
+    },
+
     switchTab(tabName) {
+        // Update URL hash for GitHub Pages compatibility (allows refresh/bookmarking)
+        window.location.hash = `#${tabName}`;
+        console.log('[APP] Switched to tab:', tabName, '| Hash:', window.location.hash);
+        
+        // Hide all sections
+        document.querySelectorAll('.tab-section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Remove active from tabs
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Show selected section
+        const section = document.getElementById(tabName);
+        if (section) section.classList.add('active');
+
+        // Mark tab as active
+        document.querySelector(`.nav-tab[data-tab="${tabName}"]`)?.classList.add('active');
+
+        AppState.currentTab = tabName;
+
+        // Render content
+        switch (tabName) {
+            case 'dashboard':
+                this.renderDashboard();
+                break;
+            case 'clients':
+                this.renderClients();
+                break;
+            case 'appointments':
+                this.renderAppointments();
+                break;
+            case 'transactions':
+                this.renderTransactions();
+                break;
+            case 'history':
+                this.renderHistory();
+                break;
+            case 'accounting':
+                Logger.log('[APP] Switched to accounting tab');
+                this.renderAccounting();
+                break;
+            case 'services':
+                this.renderServices();
+                break;
+        }
+    },
+
+    /**
+     * Switch tab silently (without updating hash to prevent loops)
+     */
+    switchTabSilent(tabName) {
+        console.log('[APP] Silent tab switch:', tabName, '(no hash update)');
+        
         // Hide all sections
         document.querySelectorAll('.tab-section').forEach(section => {
             section.classList.remove('active');

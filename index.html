@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salon Elena - Premium Hairstyle Management</title>
     <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- GitHub Pages Compatibility -->
+    <script>
+        // Detect if running on GitHub Pages and set base path accordingly
+        window.APP_BASE_PATH = window.location.pathname.includes('/SalonElena/') ? '/SalonElena/' : './';
+        console.log('[APP INIT] BASE PATH:', window.APP_BASE_PATH);
+        console.log('[APP INIT] CURRENT URL:', window.location.href);
+        console.log('[APP INIT] PATHNAME:', window.location.pathname);
+        console.log('[APP INIT] HOSTNAME:', window.location.hostname);
+        console.log('[APP INIT] ENVIRONMENT:', window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'LOCAL' : 'GITHUB PAGES');
+    </script>
 </head>
 <body>
     <div class="app-container">
