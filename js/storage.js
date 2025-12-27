@@ -215,106 +215,146 @@ const Storage = {
         return [
             {
                 id: 'srv-1',
-                name: 'Tuns Vârfuri',
-                category: 'tuns',
-                price: 30,
+                name: 'Haircut - Classic',
+                category: 'haircut',
+                price: 35,
                 duration: 30,
                 createdAt: new Date().toISOString()
             },
             {
                 id: 'srv-2',
-                name: 'Tuns Bob',
-                category: 'tuns',
+                name: 'Haircut - Layers',
+                category: 'haircut',
+                price: 50,
+                duration: 45,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-3',
+                name: 'Haircut - Bob',
+                category: 'haircut',
+                price: 55,
+                duration: 50,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-4',
+                name: 'Haircut - Undercut',
+                category: 'haircut',
+                price: 45,
+                duration: 40,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-5',
+                name: 'Hairstyle - Waves',
+                category: 'hairstyle',
                 price: 60,
                 duration: 60,
                 createdAt: new Date().toISOString()
             },
             {
-                id: 'srv-3',
-                name: 'Tuns în Scări',
-                category: 'tuns',
-                price: 80,
-                duration: 90,
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 'srv-4',
-                name: 'Coafat Bucle',
-                category: 'coafat',
-                price: 50,
-                duration: 60,
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 'srv-5',
-                name: 'Coafat Întins',
-                category: 'coafat',
-                price: 45,
-                duration: 45,
-                createdAt: new Date().toISOString()
-            },
-            {
                 id: 'srv-6',
-                name: 'Updo',
-                category: 'coafat',
+                name: 'Hairstyle - Curls',
+                category: 'hairstyle',
+                price: 65,
+                duration: 70,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-7',
+                name: 'Hairstyle - Straight',
+                category: 'hairstyle',
+                price: 55,
+                duration: 50,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-8',
+                name: 'Hairstyle - Volume',
+                category: 'hairstyle',
                 price: 70,
                 duration: 75,
                 createdAt: new Date().toISOString()
             },
             {
-                id: 'srv-7',
-                name: 'Balayage',
-                category: 'vopsit',
-                price: 150,
-                duration: 120,
+                id: 'srv-9',
+                name: 'Coafură - Updo Classic',
+                category: 'coafura',
+                price: 75,
+                duration: 60,
                 createdAt: new Date().toISOString()
             },
             {
-                id: 'srv-8',
-                name: 'Highlights',
-                category: 'vopsit',
-                price: 120,
+                id: 'srv-10',
+                name: 'Coafură - Updo Elegant',
+                category: 'coafura',
+                price: 95,
                 duration: 90,
                 createdAt: new Date().toISOString()
             },
             {
-                id: 'srv-9',
-                name: 'Colorare Completă',
-                category: 'vopsit',
+                id: 'srv-11',
+                name: 'Coafură - Bridal',
+                category: 'coafura',
+                price: 120,
+                duration: 120,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-12',
+                name: 'Coafură - Half-Up',
+                category: 'coafura',
+                price: 60,
+                duration: 45,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-13',
+                name: 'Color - Full',
+                category: 'color',
                 price: 100,
                 duration: 90,
                 createdAt: new Date().toISOString()
             },
             {
-                id: 'srv-10',
-                name: 'Tratament Keratin',
-                category: 'tratament',
+                id: 'srv-14',
+                name: 'Color - Highlights',
+                category: 'color',
+                price: 120,
+                duration: 90,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-15',
+                name: 'Color - Balayage',
+                category: 'color',
+                price: 150,
+                duration: 120,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'srv-16',
+                name: 'Treatment - Keratin',
+                category: 'treatment',
                 price: 90,
                 duration: 120,
                 createdAt: new Date().toISOString()
             },
             {
-                id: 'srv-11',
-                name: 'Tratament Reparare',
-                category: 'tratament',
+                id: 'srv-17',
+                name: 'Treatment - Deep Repair',
+                category: 'treatment',
                 price: 70,
                 duration: 90,
                 createdAt: new Date().toISOString()
             },
             {
-                id: 'srv-12',
-                name: 'Tratament Hidratare',
-                category: 'tratament',
+                id: 'srv-18',
+                name: 'Treatment - Hydration',
+                category: 'treatment',
                 price: 60,
                 duration: 60,
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 'srv-13',
-                name: 'Tuns Barbati',
-                category: 'tuns-barbati',
-                price: 25,
-                duration: 20,
                 createdAt: new Date().toISOString()
             }
         ];

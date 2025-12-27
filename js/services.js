@@ -74,6 +74,19 @@ const Services = {
     },
 
     /**
+     * Delete service by name (cleanup function)
+     */
+    deleteByName(name) {
+        const initialLength = this.data.length;
+        this.data = this.data.filter(s => s.name !== name);
+        if (this.data.length < initialLength) {
+            this.save();
+            return true;
+        }
+        return false;
+    },
+
+    /**
      * Get services by category
      */
     getByCategory(category) {

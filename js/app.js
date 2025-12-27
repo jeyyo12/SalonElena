@@ -61,6 +61,10 @@ const App = {
      */
     loadData() {
         Services.init();
+        
+        // CLEANUP: Remove "dfdfd" service if it exists
+        Services.deleteByName('dfdfd');
+        
         Clients.init();
         Appointments.init();
         Transactions.init();
