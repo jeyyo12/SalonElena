@@ -1076,6 +1076,22 @@ const App = {
                 const client = Clients.getById(appt.clientId);
                 const service = Services.getById(appt.serviceId);
                 const isCompleted = appt.status === 'completed';
+                const isCancelled = appt.status === 'cancelled';
+
+                let buttons = '';
+                
+                // Finalizează button (only if scheduled)
+                if (!isCompleted && !isCancelled) {
+                    buttons += `<button class="btn btn-sm btn-primary" data-appt-id="${appt.id}" data-action="complete-appt" title="Finalizează programare">✓ Finalizează</button>`;
+                }
+                
+                // Cancel button (optional, if not completed/cancelled)
+                if (!isCompleted && !isCancelled) {
+                    buttons += `<button class="btn btn-sm btn-danger" data-appt-id="${appt.id}" data-action="cancel-appt" title="Anulează programare">✕ Anulează</button>`;
+                }
+                
+                // View button (always)
+                buttons += `<button class="btn btn-sm btn-secondary" data-appt-id="${appt.id}" data-action="view-appt" title="Vezi detalii">👁 Vezi</button>`;
 
                 return `
                     <div class="appointment-card">
@@ -1086,17 +1102,32 @@ const App = {
                         </div>
                         <div class="appointment-actions">
                             <span class="appointment-status status-${appt.status}">${appt.status}</span>
-                            ${!isCompleted ? `<button class="btn btn-sm btn-primary" data-appt-id="${appt.id}" data-action="complete-appt">✓ Finalizează</button>` : ''}
+                            ${buttons}
                         </div>
                     </div>
                 `;
             }).join('');
 
-            // Add event listeners for complete buttons
-            apptContainer.querySelectorAll('[data-action="complete-appt"]').forEach(btn => {
+            // Add event listeners for dashboard appointment buttons
+            apptContainer.querySelectorAll('[data-action]').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const apptId = e.target.dataset.apptId;
-                    this.completeAppointmentFromDashboard(apptId);
+                    const action = e.target.dataset.action;
+                    
+                    if (action === 'complete-appt') {
+                        this.openCompleteAppointmentModal(apptId);
+                    } else if (action === 'cancel-appt') {
+                        if (confirm('Sigur anulezi aceasta programare?')) {
+                            const appt = Appointments.getById(apptId);
+                            Appointments.update(apptId, appt.clientId, appt.serviceId, 
+                                appt.date, appt.time, appt.duration,
+                                appt.notes, 'cancelled');
+                            UI.showToast('Programare anulată', 'warning');
+                            this.renderDashboard();
+                        }
+                    } else if (action === 'view-appt') {
+                        this.openAppointmentFromDashboard(apptId);
+                    }
                 });
             });
         }
@@ -1130,14 +1161,119 @@ const App = {
     },
 
     /**
-     * Complete appointment from dashboard
+     * Open complete appointment modal with payment details
      */
-    completeAppointmentFromDashboard(apptId) {
+    openCompleteAppointmentModal(apptId) {
+        const appointment = Appointments.getById(apptId);
+        if (!appointment) return;
+
+        const client = Clients.getById(appointment.clientId);
+        const service = Services.getById(appointment.serviceId);
+
+        // Store appointment ID for later use
+        AppState.currentAppointmentId = apptId;
+
+        // Populate summary
+        document.getElementById('summaryClient').textContent = `👤 ${client?.name || '-'}`;
+        document.getElementById('summaryService').textContent = `💇 ${service?.name || '-'}`;
+        document.getElementById('summaryTime').textContent = `🕐 ${appointment.time}`;
+
+        // Set default amount (service price)
+        const defaultAmount = service?.price || 0;
+        document.getElementById('completeAmount').value = defaultAmount;
+
+        // Reset form
+        document.getElementById('completeAppointmentForm').reset();
+        document.getElementById('completePaymentMethod').value = '';
+
+        UI.openModal('completeAppointmentModal');
+    },
+
+    /**
+     * Complete appointment with payment
+     */
+    completeAppointmentWithPayment(apptId, amount, paymentMethod) {
         const appointment = Appointments.getById(apptId);
         if (!appointment) {
             UI.showToast('Programare nu găsită', 'error');
-            return;
+            return false;
         }
+
+        const client = Clients.getById(appointment.clientId);
+        const service = Services.getById(appointment.serviceId);
+
+        if (!client || !service) {
+            UI.showToast('Date lipsă: client sau serviciu', 'error');
+            return false;
+        }
+
+        // Check if transaction already exists for this appointment
+        const existingTx = Transactions.getAll().find(t => t.appointmentId === apptId && t.type === 'income');
+        if (existingTx) {
+            UI.showToast('Programare deja finalizată - tranzacție existentă', 'warning');
+            return false;
+        }
+
+        console.log('[COMPLETE APPOINTMENT]', {
+            appointmentId: apptId,
+            amount: parseFloat(amount),
+            paymentMethod: paymentMethod,
+            clientId: appointment.clientId,
+            serviceName: service.name
+        });
+
+        // Mark appointment as completed
+        const completedAt = new Date().toISOString();
+        Appointments.update(
+            apptId,
+            appointment.clientId,
+            appointment.serviceId,
+            appointment.date,
+            appointment.time,
+            appointment.duration,
+            appointment.notes,
+            'completed'
+        );
+
+        // Create income transaction
+        Transactions.createIncome(
+            appointment.clientId,
+            apptId,
+            appointment.serviceId,
+            parseFloat(amount),
+            paymentMethod,
+            `${service.name}`
+        );
+
+        // Update client stats
+        client.visits = (client.visits || 0) + 1;
+        client.lastVisitAt = completedAt;
+        client.totalSpent = (client.totalSpent || 0) + service.price;
+        client.tag = Clients.calculateTag(client.visits, client.totalSpent);
+        Clients.save();
+
+        // Emit events for other modules to update
+        window.dispatchEvent(new Event('appointments:changed'));
+        window.dispatchEvent(new Event('transactions:changed'));
+
+        UI.showToast(`Programare finalizată - ${UI.formatCurrency(amount)} încasat`, 'success');
+        
+        // Re-render dashboard
+        this.renderDashboard();
+
+        return true;
+    },
+
+    /**
+     * Open appointment for viewing/editing
+     */
+    openAppointmentFromDashboard(apptId) {
+        const appointment = Appointments.getById(apptId);
+        if (!appointment) return;
+        
+        AppState.currentAppointmentId = apptId;
+        this.openAppointmentModal(apptId, null);
+    },
 
         if (appointment.status === 'completed') {
             UI.showToast('Programare deja finalizată', 'warning');
@@ -1184,6 +1320,7 @@ const App = {
         UI.setupModalClose('serviceModal');
         UI.setupModalClose('expenseModal');
         UI.setupModalClose('recurringExpensesModal');
+        UI.setupModalClose('completeAppointmentModal');
         
         // Setup global ESC key handler
         document.addEventListener('keydown', (e) => {
@@ -1196,6 +1333,37 @@ const App = {
             }
         });
         Logger.log('[INIT] ESC handler attached');
+
+        // Complete Appointment Modal handlers
+        const btnCompleteConfirm = document.getElementById('btnCompleteConfirm');
+        if (btnCompleteConfirm) {
+            btnCompleteConfirm.addEventListener('click', () => {
+                const apptId = AppState.currentAppointmentId;
+                const paymentMethod = document.getElementById('completePaymentMethod').value;
+                const amount = document.getElementById('completeAmount').value;
+
+                if (!paymentMethod) {
+                    UI.showToast('Selectează metoda plață', 'warning');
+                    return;
+                }
+
+                if (!amount || parseFloat(amount) <= 0) {
+                    UI.showToast('Suma trebuie să fie mai mare decât 0', 'warning');
+                    return;
+                }
+
+                if (this.completeAppointmentWithPayment(apptId, amount, paymentMethod)) {
+                    UI.closeModal('completeAppointmentModal');
+                }
+            });
+        }
+
+        const btnCompleteCancel = document.getElementById('btnCompleteCancel');
+        if (btnCompleteCancel) {
+            btnCompleteCancel.addEventListener('click', () => {
+                UI.closeModal('completeAppointmentModal');
+            });
+        }
 
         // Client modal save
         const btnClientSave = document.getElementById('btnClientSave');
