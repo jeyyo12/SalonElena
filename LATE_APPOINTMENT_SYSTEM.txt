@@ -1,0 +1,292 @@
+═══════════════════════════════════════════════════════════════════════════════
+LATE APPOINTMENT AUTO-DETECTION SYSTEM
+═══════════════════════════════════════════════════════════════════════════════
+
+FEATURE OVERVIEW:
+The application now automatically detects when clients are late and provides
+smart UI controls to manage late appointments without manual intervention.
+
+═══════════════════════════════════════════════════════════════════════════════
+HOW IT WORKS:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. GRACE PERIOD: 10 minutes
+   - Every scheduled appointment has a 10-minute grace period
+   - If current time > scheduled time + 10 minutes:
+     → Status automatically changes to "late"
+     → lateSince timestamp is recorded
+     → UI re-renders with action buttons
+
+2. AUTO-DETECTION INTERVALS:
+   - Runs every 60 seconds (configurable)
+   - Also runs when rendering Dashboard and Appointments tabs
+   - Ensures real-time status updates without page refresh
+
+3. STATUSES:
+   ✓ scheduled  - Normal appointment waiting to start
+   ✓ late       - Appointment time passed + 10 min grace (ORANGE BADGE)
+   ✓ forgotten_checkin - Client arrived but we forgot to mark
+   ✓ no_show    - Client didn't show up
+   ✓ completed  - Service finished, payment recorded
+   ✓ canceled   - Appointment cancelled by us
+
+═══════════════════════════════════════════════════════════════════════════════
+QUICK START - USING LATE APPOINTMENT CONTROLS:
+═══════════════════════════════════════════════════════════════════════════════
+
+SCENARIO 1: Client is late but arrives
+─────────────────────────────────────────
+1. Navigate to Dashboard or Appointments tab
+2. See appointment with orange "⏰ Întârzie" badge
+3. Click "A venit" button
+4. Status changes to "forgotten_checkin"
+5. checkInTime is recorded automatically
+
+RESULT: You have a note that client was late but eventually came.
+
+
+SCENARIO 2: Client is late, offer extra time
+────────────────────────────────────────────
+1. See late appointment on Dashboard
+2. Click "+10 min" button
+3. Note automatically adds: "(+10 min întârziere)"
+4. Appointment stays "late" status
+5. UI updates without page reload
+
+RESULT: You can track how many extra minutes were offered.
+
+
+SCENARIO 3: Client didn't show up
+──────────────────────────────────
+1. See late appointment approaching deadline
+2. Click "Nu a venit" button
+3. Confirm the action
+4. Status changes to "no_show"
+5. Appointment marked in system
+
+RESULT: Tracks no-shows for client profile and business analytics.
+
+═══════════════════════════════════════════════════════════════════════════════
+VISUAL INDICATORS:
+═══════════════════════════════════════════════════════════════════════════════
+
+LATE BADGE:
+┌─────────────────────────────┐
+│  ⏰ Întârzie  (glowing)      │  ← Orange color with pulse animation
+│                              │  ← Cards appear at TOP of list
+└─────────────────────────────┘
+
+CARD STYLING:
+┌──────────────────────────────┐
+│ 10:00  Maria        Haircut  │
+│        ⏰ Întârzie            │  ← Orange border + gradient background
+│ [A venit] [+10min] [Nu a venit]
+└──────────────────────────────┘
+
+STATUS LABELS (Romanian):
+- Programat        (scheduled - violet)
+- ⏰ Întârzie      (late - orange, glowing)
+- A venit (uitat)  (forgotten_checkin - green)
+- Nu a venit       (no_show - red)
+- Finalizat        (completed - green)
+- Anulat           (canceled - red)
+
+═══════════════════════════════════════════════════════════════════════════════
+TECHNICAL DETAILS:
+═══════════════════════════════════════════════════════════════════════════════
+
+FILES MODIFIED:
+
+1. js/appointments.js
+   ├─ create() - Added lateSince, checkInTime fields
+   ├─ autoDetectLateAppointments() - NEW
+   │  └─ Checks all today's scheduled appts
+   │  └─ If now > startTime + 10min → status='late'
+   ├─ markForgottenCheckIn() - NEW
+   │  └─ status → 'forgotten_checkin'
+   │  └─ checkInTime → ISO timestamp
+   ├─ markNoShow() - NEW
+   │  └─ status → 'no_show'
+   ├─ updateLateNotes() - NEW
+   │  └─ Adds delay note without changing status
+   └─ sortByTime() - MODIFIED
+      └─ Late appointments sort first
+
+2. js/app.js
+   ├─ init() - Added 60-second late detection interval
+   ├─ renderDashboard() - ENHANCED
+   │  ├─ Calls autoDetectLateAppointments() before render
+   │  ├─ Shows late action buttons for 'late' status
+   │  ├─ Displays status badge with glow
+   │  └─ Event handlers for late actions
+   ├─ renderAppointments() - ENHANCED
+   │  ├─ Same late detection + controls
+   │  └─ Works in Appointments tab
+   └─ getStatusLabel() - NEW
+      └─ Returns human-readable status in Romanian
+
+3. css/styles.css
+   ├─ .status-late - Orange badge with glow animation
+   ├─ .status-late-glow - Pulse animation (2s loop)
+   ├─ .status-forgotten_checkin - Green styling
+   ├─ .status-no_show - Red styling
+   ├─ .card-late - Border + gradient for late cards
+   ├─ .late-actions - Flex layout for control buttons
+   └─ @keyframes late-pulse - Glow animation
+
+DATA STRUCTURE:
+Appointment object now includes:
+{
+    id: "appt-123456",
+    clientId: "cli-123",
+    serviceId: "srv-1",
+    date: "2025-12-27T10:00:00Z",
+    time: "10:00",
+    duration: 60,
+    status: "late" | "scheduled" | "forgotten_checkin" | "no_show" | "completed" | "canceled",
+    
+    // New fields:
+    lateSince: "2025-12-27T10:10:30Z",  // When marked as late
+    checkInTime: "2025-12-27T10:15:45Z", // When client checked in
+    
+    // Payment tracking:
+    isPaid: false,
+    paymentAmount: 0,
+    paymentMethod: null,
+    
+    // Timestamps:
+    createdAt: "2025-12-27T09:00:00Z",
+    updatedAt: "2025-12-27T10:10:30Z"
+}
+
+═══════════════════════════════════════════════════════════════════════════════
+GRACE PERIOD CONFIGURATION:
+═══════════════════════════════════════════════════════════════════════════════
+
+To change the 10-minute grace period, edit js/appointments.js:
+
+Current:
+    const GRACE_MINUTES = 10;
+
+To change to 5 minutes:
+    const GRACE_MINUTES = 5;
+
+To change to 15 minutes:
+    const GRACE_MINUTES = 15;
+
+To change detection interval from 60 seconds, edit js/app.js:
+
+Current:
+    setInterval(() => {
+        Appointments.autoDetectLateAppointments();
+    }, 60000); // 60000 ms = 60 seconds
+
+To change to 30 seconds:
+    }, 30000); // More frequent checks
+
+═══════════════════════════════════════════════════════════════════════════════
+TESTING GUIDE:
+═══════════════════════════════════════════════════════════════════════════════
+
+TEST 1: Auto-detection
+──────────────────────
+1. Create an appointment for today at a past time (e.g., 14:00 if current time is 14:15)
+2. Wait 10+ minutes (or change system clock)
+3. Refresh page or navigate to Dashboard
+4. Appointment should show orange "⏰ Întârzie" badge
+✓ PASS: Badge appears with correct styling
+
+TEST 2: Late action buttons
+────────────────────────────
+1. See a late appointment on Dashboard
+2. Click "A venit" button
+3. Status changes to "A venit (uitat)"
+✓ PASS: Status updates immediately
+
+TEST 3: More time action
+─────────────────────────
+1. See a late appointment
+2. Click "+10 min" button
+3. Appointment stays late but note is added
+4. Check localStorage: appointment.notes should include "+10 min"
+✓ PASS: Notes updated without status change
+
+TEST 4: No-show action
+───────────────────────
+1. See a late appointment
+2. Click "Nu a venit" button
+3. Confirm dialog
+4. Status changes to red "Nu a venit" badge
+✓ PASS: No-show status recorded
+
+TEST 5: Sorting
+────────────────
+1. View Appointments tab with multiple appointments
+2. Late appointments should appear at TOP of list
+3. Then scheduled, then completed
+✓ PASS: Late appointments sort first
+
+TEST 6: Persistence
+────────────────────
+1. Create/modify late appointment
+2. Refresh page
+3. Status and all changes still there
+✓ PASS: Data persisted in localStorage
+
+═══════════════════════════════════════════════════════════════════════════════
+EVENTS & INTEGRATION:
+═══════════════════════════════════════════════════════════════════════════════
+
+When appointment status changes, system dispatches:
+    window.dispatchEvent(new Event('appointments:changed'));
+
+External modules can listen:
+    window.addEventListener('appointments:changed', () => {
+        // Update something else (e.g., KPIs, client history)
+    });
+
+═══════════════════════════════════════════════════════════════════════════════
+BUSINESS LOGIC:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. LATE TRACKING:
+   - Helps identify chronic late clients
+   - Can be used for client profiling
+   - Data available in client stats
+
+2. NO-SHOW TRACKING:
+   - Important for business analytics
+   - Can inform follow-up communications
+   - Impacts client reliability score
+
+3. FORGOTTEN CHECK-IN:
+   - Prevents loss of appointment data
+   - Allows retroactive record keeping
+   - Captures client arrival time
+
+═══════════════════════════════════════════════════════════════════════════════
+FUTURE ENHANCEMENTS (OPTIONAL):
+═══════════════════════════════════════════════════════════════════════════════
+
+Potential improvements:
+- SMS/Email notification when appointment marked late
+- Auto-save notes about delays in client file
+- Generate reports on late appointment patterns
+- Client notification about grace period
+- Escalation alerts (e.g., after 30 mins late)
+- Integration with calendar (mark late with color)
+- Stats dashboard: total late, no-shows, forgotten check-ins
+
+═══════════════════════════════════════════════════════════════════════════════
+COMMIT INFORMATION:
+═══════════════════════════════════════════════════════════════════════════════
+
+Commit: ee62450
+Title: "Add late appointment auto-detection with smart UI controls"
+
+Files changed:
+  - js/appointments.js (5 new methods, enhanced sortByTime)
+  - js/app.js (auto-detect interval, enhanced rendering, UI handlers)
+  - css/styles.css (status styling, animations, card styling)
+
+═══════════════════════════════════════════════════════════════════════════════
