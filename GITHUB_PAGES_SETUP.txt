@@ -1,0 +1,28 @@
+✅ GH-PAGES BRANCH CREAT
+
+═════════════════════════════════════════════════════════════════
+
+Acum trebuie să configurezi GitHub Pages:
+
+1. Mergi pe: https://github.com/jeyyo12/SalonElena/settings/pages
+
+2. Sub "Build and deployment" → "Branch"
+   - Selectează: gh-pages
+   - Folder: / (root)
+   - Click "Save"
+
+3. GitHub va pune site-ul live la:
+   https://jeyyo12.github.io/SalonElena/
+
+4. Asteaptă 1-2 minute pentru deployment
+
+═════════════════════════════════════════════════════════════════
+
+BRANCH STATUS:
+- Branch gh-pages creat ✓
+- Fisierele noi sunt acolo ✓
+- Gata pentru GitHub Pages ✓
+
+Doar trebuie să configurezi Settings pe GitHub.
+
+═════════════════════════════════════════════════════════════════
